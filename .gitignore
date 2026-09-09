@@ -1,0 +1,15 @@
+# Dependencias y salida de compilacion: se regeneran con npm install / npm run build.
+node_modules/
+dist/
+
+# Fotos descargadas de Drive: se regeneran con scripts/build.py y pesan ~1,5 GB.
+data/cache/
+
+# Volcado crudo del crawler, se regenera con scripts/crawl.py.
+data/tree.json
+
+# NO ignorar data/refs.json ni public/img: el primero guarda las referencias de cada
+# producto y el segundo son las fotos ya optimizadas que se publican.
+
+.DS_Store
+__pycache__/

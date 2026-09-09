@@ -1,0 +1,706 @@
+/* NEPTUS STORE - catalogo. CSS puro, mobile-first, sin dependencias. */
+
+:root {
+  --ink: #14161b;
+  --ink-soft: #5b6270;
+  --line: #e4e6ea;
+  --bg: #ffffff;
+  --bg-soft: #f6f7f9;
+  --dark: #111318;
+  --gold: #d8a94e;
+  --wa: #22a45d;
+  --radius: 12px;
+  --gap: 12px;
+  --top-h: 56px;
+}
+
+* { box-sizing: border-box; }
+
+/* Va antes que todo lo demas: sin esto, reglas como .chip-block{display:flex} ganan al
+   [hidden] del navegador (misma especificidad) y las filas ocultas seguirian viendose. */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-wrap: break-word;
+}
+
+img { max-width: 100%; display: block; }
+button { font: inherit; color: inherit; }
+
+.wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 14px; }
+
+/* ---------------------------------------------------------------- cabecera */
+
+.top {
+  background: var(--dark);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.top-in {
+  height: var(--top-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Logo de la marca. Alto fijo y ancho automatico: la cabecera no se descuadra aunque
+   cambien la imagen por otra de proporciones distintas. */
+.brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.logo {
+  height: 19px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.brand small {
+  font-size: 11px;
+  color: #a8adb9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--wa); color: #fff;
+  border: 0; border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px; font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wa-btn svg { width: 17px; height: 17px; fill: currentColor; flex: none; }
+.wa-btn:active { filter: brightness(.92); }
+
+/* ---------------------------------------------------------------- filtros */
+
+.filters {
+  position: sticky;
+  top: var(--top-h);
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0 4px;
+}
+
+/* Boton flotante de filtros, abajo y al centro: es la zona del pulgar, y arriba chocaba con
+   la barra cada vez que esta reaparecia al subir. Sube desde abajo, igual que el panel que
+   abre. Ya no depende de si la barra esta oculta: esta siempre que se haya bajado un poco,
+   asi no hay que adivinar nada. Fuera de movil no existe. */
+.fab {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 25;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dark);
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(10, 12, 16, .34);
+  pointer-events: none;
+  transform: translate(-50%, 160%);
+  transition: transform .24s cubic-bezier(.2, .8, .3, 1);
+}
+.fab svg { width: 15px; height: 15px; fill: currentColor; }
+
+@media (max-width: 699px) {
+  .fab { display: inline-flex; }
+  .fab.visible {
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+  /* Con el panel abierto sobra: seria un boton para abrir lo que ya esta abierto. */
+  .filters--open ~ .fab { transform: translate(-50%, 160%); pointer-events: none; }
+}
+
+/* Al bajar se esconde detras de la cabecera (que tiene mas z-index) y al subir vuelve.
+   Se mueve con transform y no encogiendo la altura: transform no toca el flujo, asi que el
+   contenido no pega un salto de 170px al ocultarse. Solo en movil, que es donde el alto
+   escasea; en escritorio la barra se queda siempre a la vista. */
+@media (max-width: 699px) {
+  .filters {
+    transition: transform .22s ease;
+    will-change: transform;
+  }
+  .filters.oculto {
+    transform: translateY(calc(-100% - 1px));
+  }
+}
+
+.search-row { display: flex; gap: 8px; align-items: center; }
+
+.search { position: relative; flex: 1; min-width: 0; }
+.search svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; fill: var(--ink-soft); pointer-events: none;
+}
+.search input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  font-size: 14px;
+  color: inherit;
+  -webkit-appearance: none;
+}
+.search input:focus { outline: 2px solid var(--gold); outline-offset: -1px; background: #fff; }
+
+/* En movil sobra: los filtros activos se quitan desde las pastillas o desde el panel,
+   y aqui solo robaria ancho al buscador. */
+.reset { display: none; }
+
+@media (min-width: 700px) {
+  .reset {
+    display: inline-block;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+}
+
+/* En movil: etiqueta encima y todos los chips a la vista en varias lineas. Con 18 categorias,
+   una fila con scroll horizontal escondia 15 de ellas y comia ancho con la etiqueta lateral. */
+.chip-block { margin-bottom: 16px; }
+
+.chip-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  margin-bottom: 7px;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chips::-webkit-scrollbar { height: 3px; }
+.chips::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+.chips-wrap { position: relative; min-width: 0; }
+.chips-nav { display: none; }
+
+/* Las filas de la barra se desplazan a lo ancho, tambien en movil: asi los filtros estan
+   siempre a la vista sin comerse media pantalla. Los chips del panel van en varias lineas,
+   que para eso esta el panel. */
+.rows { margin-top: 10px; }
+.rows .chip-block { margin-bottom: 9px; }
+.rows .chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.rows .chips::-webkit-scrollbar { display: none; }
+
+/* El degradado avisa de que la fila sigue. En movil no hay flechas: se desliza con el dedo. */
+.rows .chips-wrap::before,
+.rows .chips-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 2px;
+  width: 40px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 1;
+}
+.rows .chips-wrap::before { left: 0; background: linear-gradient(to right, var(--bg) 55%, transparent); }
+.rows .chips-wrap::after { right: 0; background: linear-gradient(to left, var(--bg) 55%, transparent); }
+.rows .chips-wrap.can-left::before,
+.rows .chips-wrap.can-right::after { opacity: 1; }
+
+/* Las flechas tambien en movil: el degradado solo insinua, la flecha lo dice. Sin ellas no
+   quedaba claro que la fila de categorias sigue hacia los lados. */
+.rows .chips-nav {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(10, 12, 16, .18);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+.rows .chips-nav.prev { left: 0; }
+.rows .chips-nav.next { right: 0; }
+.rows .chips-wrap.can-left .chips-nav.prev,
+.rows .chips-wrap.can-right .chips-nav.next { opacity: 1; pointer-events: auto; }
+
+.nota { font-style: normal; color: var(--gold); font-weight: 600; }
+
+/* ------------------------------------------------- boton de filtros + panel (movil) */
+
+.filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filters-btn svg { width: 15px; height: 15px; fill: currentColor; }
+.filters-btn[aria-expanded="true"] { background: var(--dark); border-color: var(--dark); color: #fff; }
+
+.fbadge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--dark);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: var(--dark);
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 8px 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 100%;
+}
+.pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pill em {
+  font-style: normal;
+  font-size: 15px;
+  line-height: 1;
+  opacity: .75;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, .5);
+  z-index: 1;
+  animation: fade .18s ease;
+}
+@keyframes fade { from { opacity: 0 } }
+
+.panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  max-height: 84dvh;
+  overflow-y: auto;
+  padding: 0 0 calc(12px + env(safe-area-inset-bottom));
+  transform: translateY(101%);
+  transition: transform .22s ease;
+  box-shadow: 0 -10px 34px rgba(10, 12, 16, .22);
+  visibility: hidden;
+}
+.filters--open .panel { transform: none; visibility: visible; }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 12px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  z-index: 1;
+}
+.panel-head strong { font-size: 16px; }
+
+.panel-x {
+  border: 0;
+  background: var(--bg-soft);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.panel-foot {
+  display: flex;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.panel-clear {
+  flex: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 13px 18px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.panel-apply {
+  flex: 1;
+  border: 0;
+  background: var(--dark);
+  color: #fff;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+.chip b { font-weight: 600; }
+.chip span { color: var(--ink-soft); font-size: 11px; margin-left: 4px; }
+.chip[aria-pressed="true"] {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+.chip[aria-pressed="true"] span { color: #b9bec9; }
+
+/* ---------------------------------------------------------------- grid */
+
+.count { font-size: 13px; color: var(--ink-soft); margin: 14px 0 10px; }
+.count b { color: var(--ink); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--gap);
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.card:active { transform: scale(.985); }
+
+.card-img {
+  width: 100%;
+  /* height:auto es imprescindible: sin el, el atributo height del <img> (que esta ahi para
+     reservar el hueco antes de que cargue) mandaria sobre el aspect-ratio y las tarjetas
+     saldrian estiradas. */
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--bg-soft);
+}
+
+.card-body { padding: 7px 9px 9px; }
+
+.card-ref {
+  font-size: 11px;
+  letter-spacing: .05em;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-cat {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tallas { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+
+.talla {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: #b3b8c2;
+}
+.talla.on {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+
+.empty { text-align: center; color: var(--ink-soft); padding: 40px 0; }
+.linklike {
+  background: none; border: 0; padding: 0;
+  color: var(--ink); text-decoration: underline; cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- paginacion */
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  padding: 26px 0 40px;
+}
+
+.pager button {
+  min-width: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.pager button[aria-current="true"] {
+  background: var(--dark); border-color: var(--dark); color: #fff; font-weight: 600;
+}
+.pager button:disabled { opacity: .35; cursor: default; }
+.pager .dots { color: var(--ink-soft); padding: 0 2px; }
+
+/* ---------------------------------------------------------------- pie */
+
+.foot {
+  border-top: 1px solid var(--line);
+  padding: 22px 0 34px;
+  background: var(--bg-soft);
+}
+.foot p { margin: 0 0 4px; font-size: 13px; }
+.muted { color: var(--ink-soft); font-size: 12px !important; }
+
+/* ---------------------------------------------------------------- lightbox */
+
+/* En movil ocupa la pantalla entera. La clave es que el bloque de info (donde esta el boton
+   de WhatsApp) tenga altura fija abajo y sea la imagen la que se encoja: si la imagen crece
+   libremente, en pantallas bajas empuja el boton fuera de la vista y no hay forma de pedir. */
+.lb {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  max-width: 100vw;
+  /* svh y no dvh: svh es la altura con las barras del navegador desplegadas, la mas pequena
+     posible. Asi el boton de pedir nunca queda debajo de la barra de Safari/Chrome movil
+     mientras esta se muestra u oculta al hacer scroll. */
+  height: 100svh;
+  max-height: 100svh;
+  background: #fff;
+  border-radius: 0;
+  overflow: hidden;
+}
+.lb::backdrop { background: rgba(10, 12, 16, .82); }
+
+.lb-in {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.lb-img {
+  background: #0d0f13;
+  /* Flex y no grid: con place-items:center el alto porcentual de la foto queda indefinido y
+     la imagen se sale de la caja (se veria recortada en pantallas bajas en vez de encogerse). */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* flex-basis 0 + min-height 0 = se queda con el hueco que sobre, nunca lo reclama. */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.lb-img img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.lb-info {
+  flex: 0 0 auto;
+  max-height: 52svh;
+  overflow-y: auto;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+}
+.lb-cat { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.lb-ref {
+  margin: 2px 0 12px;
+  font-size: 19px;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+.lb-lbl {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.lb-sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.lb-size {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lb-size[aria-pressed="true"] { background: var(--dark); border-color: var(--dark); color: #fff; }
+
+.wa-big { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+.wa-big svg { width: 19px; height: 19px; }
+
+.lb-hint { margin: 8px 0 0; font-size: 11px; color: var(--ink-soft); text-align: center; }
+
+.lb-x, .lb-nav {
+  position: fixed;
+  z-index: 5;
+  border: 0;
+  background: rgba(20, 22, 28, .6);
+  color: #fff;
+  cursor: pointer;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.lb-x {
+  top: calc(10px + env(safe-area-inset-top));
+  right: 12px;
+  width: 38px; height: 38px;
+  font-size: 26px; line-height: 1;
+}
+.lb-nav { top: 28dvh; width: 40px; height: 40px; font-size: 28px; line-height: 1; }
+.lb-prev { left: 10px; }
+.lb-next { right: 10px; }
+.lb-nav:disabled { opacity: .25; }
+
+/* ---------------------------------------------------------------- escritorio */
+
+@media (min-width: 700px) {
+  :root { --gap: 16px; --top-h: 62px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .logo { height: 24px; }
+  .card-cat { font-size: 13px; }
+
+  /* En escritorio sobra el panel entero: las filas de la barra ya muestran todo. */
+  .filters-btn, .pills, .scrim, .panel { display: none !important; }
+
+  /* Etiqueta al lado en vez de encima: hay ancho de sobra y ahorra alto. */
+  .rows { margin-top: 4px; }
+  .chip-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rows .chip-block { margin-bottom: 6px; }
+  .chip-label { width: 68px; flex: none; margin-bottom: 0; padding-top: 2px; }
+  .chips-wrap { flex: 1; }
+
+  .rows .chips-wrap::before,
+  .rows .chips-wrap::after { width: 48px; bottom: 4px; }
+  .rows .chips-nav { width: 28px; height: 28px; font-size: 18px; }
+  .rows .chips-nav:hover { background: var(--bg-soft); }
+
+  /* En escritorio vuelve a ser una ventana centrada, no una pantalla completa. */
+  .lb {
+    border-radius: 14px;
+    width: min(960px, 100vw);
+    height: auto;
+    max-height: 92dvh;
+    margin: auto;
+  }
+  .lb-in { flex-direction: row; height: auto; max-height: 92dvh; }
+  .lb-img { flex: 1 1 58%; }
+  .lb-img img { width: auto; height: auto; max-width: 100%; max-height: 92dvh; }
+  .lb-info { flex: 0 0 300px; max-height: none; padding: 24px; overflow-y: auto; }
+  .lb-x { position: absolute; }
+  .lb-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

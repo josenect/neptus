@@ -1,0 +1,14 @@
+# Cabeceras para Cloudflare Pages / Netlify.
+
+# Las imagenes llevan la referencia en el nombre y nunca cambian de contenido:
+# se pueden cachear para siempre, asi el cliente que vuelve no las descarga otra vez.
+/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# El catalogo si cambia en cada actualizacion: siempre revalidar.
+/catalog.json
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

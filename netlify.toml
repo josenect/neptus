@@ -1,0 +1,15 @@
+# Configuracion de despliegue en Netlify.
+# Las cabeceras de cache se leen de public/_headers, que Vite copia tal cual a dist/.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Variables que se pueden definir en Netlify (Site configuration > Environment variables).
+# Si no se definen, se usan los valores de public/config.js.
+#   VITE_WHATSAPP  numero que recibe los pedidos, indicativo + numero, sin + ni espacios
+#   VITE_STORE     nombre de la tienda
+#   VITE_TAGLINE   frase bajo el nombre
