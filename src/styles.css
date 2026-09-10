@@ -669,15 +669,21 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
 .lb-img {
   position: relative;
   background: #0d0f13;
+  display: block;
+  /* flex-basis 0 + min-height 0 = se queda con el hueco que sobre, nunca lo reclama. */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lb-pan {
+  width: 100%;
+  height: 100%;
   /* Flex y no grid: con place-items:center el alto porcentual de la foto queda indefinido y
      la imagen se sale de la caja (se veria recortada en pantallas bajas en vez de encogerse). */
   display: flex;
   align-items: center;
   justify-content: center;
-  /* flex-basis 0 + min-height 0 = se queda con el hueco que sobre, nunca lo reclama. */
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
 }
 .lb-img img {
   width: auto;
@@ -691,13 +697,13 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
    se arrastra con el dedo sin inventar gestos, y en escritorio con la rueda.
    Al ampliar se pasa a display:block a proposito: con flex centrado, lo que se sale por
    arriba y por la izquierda queda fuera del alcance del scroll y no se puede llegar a ello. */
-.lb-img.zoom {
+.lb-pan.zoom {
   display: block;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   cursor: zoom-out;
 }
-.lb-img.zoom img {
+.lb-pan.zoom img {
   width: 250%;
   max-width: none;
   height: auto;

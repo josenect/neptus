@@ -516,7 +516,7 @@ import "./styles.css";
   /* Ver de cerca. El desplazamiento lo hace el navegador; aqui solo se cambia el tamano y se
      centra la vista, que es lo unico que el scroll nativo no hace por si mismo. */
   function ampliar(activar) {
-    var caja = $("lb-img-box");
+    var caja = $("lb-pan");
     caja.classList.toggle("zoom", activar);
     lb.classList.toggle("ampliada", activar);
     $("lb-zoom").querySelector(".mas").hidden = activar;
@@ -576,13 +576,13 @@ import "./styles.css";
   }
 
   $("lb-zoom").addEventListener("click", function () {
-    ampliar(!$("lb-img-box").classList.contains("zoom"));
+    ampliar(!$("lb-pan").classList.contains("zoom"));
   });
   // Tocar la foto ampliada la devuelve a su tamano; tocarla normal no hace nada, para no
   // ampliar sin querer mientras se pasa de producto.
-  $("lb-img-box").addEventListener("click", function (e) {
+  $("lb-pan").addEventListener("click", function (e) {
     if (e.target !== $("lb-img")) return;
-    if ($("lb-img-box").classList.contains("zoom")) ampliar(false);
+    if ($("lb-pan").classList.contains("zoom")) ampliar(false);
   });
   $("lb-x").addEventListener("click", function () { lb.close(); });
   $("lb-prev").addEventListener("click", function () { step(-1); });

@@ -183,7 +183,9 @@
   <button class="lb-nav lb-next" id="lb-next" type="button" aria-label="Siguiente">&#8250;</button>
   <div class="lb-in">
     <div class="lb-img" id="lb-img-box">
-      <img id="lb-img" alt="">
+      <!-- La capa que se desplaza al ampliar. La lupa queda fuera de ella para no viajar
+           con la foto: si esta dentro del elemento con overflow, se va con el contenido. -->
+      <div class="lb-pan" id="lb-pan"><img id="lb-img" alt=""></div>
       <button class="lb-zoom" id="lb-zoom" type="button" aria-label="Ver más de cerca">
         <svg class="mas" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2m0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12M9 6v2H7v2h2v2h2v-2h2V8h-2V6z"/></svg>
         <svg class="menos" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2m0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12M7 8h6v2H7z"/></svg>
