@@ -162,6 +162,42 @@ button { font: inherit; color: inherit; }
   .filters.oculto { transform: translateY(calc(-100% - 1px)); }
 }
 
+/* Volver arriba. Aparece cuando ya se ha bajado lo suficiente como para que rebobinar a
+   mano canse. Abajo a la izquierda: la esquina derecha la ocupa el distintivo de Netlify. */
+.subir {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  /* Dorado de la marca, no blanco ni negro. Blanco se perdia sobre las fotos claras (que son
+     muchas: fondos de estudio y camisetas blancas) y negro lo confundia con la pestana de
+     filtros. El dorado contrasta contra foto clara y oscura, y no se parece a nada mas. */
+  background: var(--gold);
+  color: var(--dark);
+  border: 0;
+  cursor: pointer;
+  /* Aro blanco + sombra: el dorado esta a media luminancia y contra una foto clara y calida
+     (fondos de estudio, prendas beige) se camuflaba. El aro lo separa de cualquier fondo. */
+  box-shadow: 0 0 0 2px #fff, 0 4px 16px rgba(10, 12, 16, .34);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.subir svg { width: 24px; height: 24px; fill: currentColor; }
+.subir.visible { opacity: 1; pointer-events: auto; transform: none; }
+
+/* Con el panel abierto o durante la entrada no pinta nada. */
+body.panel-abierto .subir,
+.arrancando .subir { opacity: 0; pointer-events: none; }
+
 /* Pestana con la flecha. Aparece cuando la barra se recoge y la devuelve de un toque. */
 .tirador {
   position: fixed;
@@ -171,13 +207,16 @@ button { font: inherit; color: inherit; }
   display: none;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 24px;
-  padding: 0;
+  gap: 4px;
+  height: 26px;
+  padding: 0 12px 0 13px;
   border: 0;
-  border-radius: 0 0 999px 999px;
+  border-radius: 0 0 13px 13px;
   background: var(--dark);
   color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(10, 12, 16, .28);
   opacity: 0;
@@ -185,7 +224,7 @@ button { font: inherit; color: inherit; }
   transform: translate(-50%, -16px);
   transition: opacity .45s ease, transform .45s ease;
 }
-.tirador svg { width: 20px; height: 20px; fill: currentColor; }
+.tirador svg { width: 15px; height: 15px; fill: currentColor; }
 
 @media (max-width: 699px) {
   .tirador { display: inline-flex; }
@@ -628,6 +667,7 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
 }
 
 .lb-img {
+  position: relative;
   background: #0d0f13;
   /* Flex y no grid: con place-items:center el alto porcentual de la foto queda indefinido y
      la imagen se sale de la caja (se veria recortada en pantallas bajas en vez de encogerse). */
@@ -646,6 +686,46 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   max-height: 100%;
   object-fit: contain;
 }
+
+/* Ver de cerca. Se agranda la foto y se deja que el propio navegador la desplace: en el movil
+   se arrastra con el dedo sin inventar gestos, y en escritorio con la rueda.
+   Al ampliar se pasa a display:block a proposito: con flex centrado, lo que se sale por
+   arriba y por la izquierda queda fuera del alcance del scroll y no se puede llegar a ello. */
+.lb-img.zoom {
+  display: block;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  cursor: zoom-out;
+}
+.lb-img.zoom img {
+  width: 250%;
+  max-width: none;
+  height: auto;
+  max-height: none;
+}
+
+.lb-zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(20, 22, 28, .62);
+  color: #fff;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.lb-zoom svg { width: 22px; height: 22px; fill: currentColor; }
+
+/* Al ampliar, las flechas de anterior/siguiente estorban el arrastre. */
+.lb.ampliada .lb-nav { display: none; }
 
 .lb-info {
   flex: 0 0 auto;

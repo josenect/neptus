@@ -513,6 +513,24 @@ import "./styles.css";
 
   var lb = $("lb");
 
+  /* Ver de cerca. El desplazamiento lo hace el navegador; aqui solo se cambia el tamano y se
+     centra la vista, que es lo unico que el scroll nativo no hace por si mismo. */
+  function ampliar(activar) {
+    var caja = $("lb-img-box");
+    caja.classList.toggle("zoom", activar);
+    lb.classList.toggle("ampliada", activar);
+    $("lb-zoom").querySelector(".mas").hidden = activar;
+    $("lb-zoom").querySelector(".menos").hidden = !activar;
+    $("lb-zoom").setAttribute("aria-label", activar ? "Alejar" : "Ver más de cerca");
+    if (activar) {
+      // Centrar: al ampliar 2,5 veces, sin esto se queda mirando la esquina de arriba.
+      caja.scrollLeft = (caja.scrollWidth - caja.clientWidth) / 2;
+      caja.scrollTop = (caja.scrollHeight - caja.clientHeight) / 2;
+    } else {
+      caja.scrollLeft = caja.scrollTop = 0;
+    }
+  }
+
   function openLightbox(index) {
     LB_INDEX = index;
     var p = VIEW[index];
@@ -548,6 +566,7 @@ import "./styles.css";
     $("lb-prev").disabled = index === 0;
     $("lb-next").disabled = index >= VIEW.length - 1;
 
+    ampliar(false);
     if (!lb.open) lb.showModal();
   }
 
@@ -556,6 +575,15 @@ import "./styles.css";
     if (next >= 0 && next < VIEW.length) openLightbox(next);
   }
 
+  $("lb-zoom").addEventListener("click", function () {
+    ampliar(!$("lb-img-box").classList.contains("zoom"));
+  });
+  // Tocar la foto ampliada la devuelve a su tamano; tocarla normal no hace nada, para no
+  // ampliar sin querer mientras se pasa de producto.
+  $("lb-img-box").addEventListener("click", function (e) {
+    if (e.target !== $("lb-img")) return;
+    if ($("lb-img-box").classList.contains("zoom")) ampliar(false);
+  });
   $("lb-x").addEventListener("click", function () { lb.close(); });
   $("lb-prev").addEventListener("click", function () { step(-1); });
   $("lb-next").addEventListener("click", function () { step(1); });
@@ -662,6 +690,7 @@ import "./styles.css";
   // ------------------------------------------------------------------ recoger la barra
 
   var UMBRAL_BARRA = 150;   // arriba del todo la barra siempre esta
+  var UMBRAL_SUBIR = 900;   // ~una pantalla y media antes de ofrecer volver arriba
   var ultimoYBarra = 0;
 
   /* Tres reglas y ninguna mas:
@@ -678,6 +707,9 @@ import "./styles.css";
 
     if (y <= UMBRAL_BARRA) $("filters").classList.remove("oculto");
     else if (bajando) $("filters").classList.add("oculto");
+
+    // Volver arriba: solo cuando rebobinar a mano ya costaria.
+    $("subir").classList.toggle("visible", y > UMBRAL_SUBIR);
   }
 
   function wireBarra() {
@@ -690,6 +722,10 @@ import "./styles.css";
       clearTimeout(cola);
       cola = setTimeout(actualizarBarra, 130);
     }, { passive: true });
+
+    $("subir").addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
 
     $("tirador").addEventListener("click", function () {
       $("filters").classList.remove("oculto");

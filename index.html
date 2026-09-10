@@ -98,7 +98,8 @@
 
 <!-- Pestaña que queda cuando la barra se recoge: sin ella habría que adivinar que los
      filtros siguen ahí. Va después de .filters para poder encenderla desde su clase. -->
-<button class="tirador" id="tirador" type="button" aria-label="Mostrar filtros">
+<button class="tirador" id="tirador" type="button">
+  <span>Filtros</span>
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg>
 </button>
 
@@ -156,6 +157,12 @@
   </div>
 </div>
 
+<!-- Volver arriba sin tener que deshacer el scroll a mano. A la izquierda porque la esquina
+     derecha de abajo es donde Netlify fija su distintivo. -->
+<button class="subir" id="subir" type="button" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8l6 6-1.4 1.4L12 10.8l-4.6 4.6L6 14z"/></svg>
+</button>
+
 <main class="wrap">
   <p class="count" id="count" role="status" aria-live="polite"></p>
   <div class="grid" id="grid"></div>
@@ -175,7 +182,13 @@
   <button class="lb-nav lb-prev" id="lb-prev" type="button" aria-label="Anterior">&#8249;</button>
   <button class="lb-nav lb-next" id="lb-next" type="button" aria-label="Siguiente">&#8250;</button>
   <div class="lb-in">
-    <div class="lb-img"><img id="lb-img" alt=""></div>
+    <div class="lb-img" id="lb-img-box">
+      <img id="lb-img" alt="">
+      <button class="lb-zoom" id="lb-zoom" type="button" aria-label="Ver más de cerca">
+        <svg class="mas" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2m0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12M9 6v2H7v2h2v2h2v-2h2V8h-2V6z"/></svg>
+        <svg class="menos" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2m0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12M7 8h6v2H7z"/></svg>
+      </button>
+    </div>
     <div class="lb-info">
       <p class="lb-cat" id="lb-cat"></p>
       <h2 class="lb-ref" id="lb-ref"></h2>
