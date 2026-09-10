@@ -19,11 +19,14 @@ window.CONFIG = {
   PER_PAGE: 48,
 
   // Mensaje que se escribe solo en WhatsApp al pulsar "Pedir por WhatsApp".
-  MSG: function (producto, talla) {
+  // El enlace apunta a la foto del producto: el dueno lo toca y la ve, sin tener que
+  // buscarla entre 1.016 referencias.
+  MSG: function (producto, talla, enlace) {
     var lineas = ["Hola! Me interesa este producto del catalogo:", ""];
     lineas.push("Referencia: " + producto.ref);
     lineas.push("Categoria: " + producto.cat + (producto.sub ? " / " + producto.sub : ""));
     if (talla) lineas.push("Talla: " + talla);
+    if (enlace) lineas.push("", enlace);
     lineas.push("", "Sigue disponible?");
     return lineas.join("\n");
   }

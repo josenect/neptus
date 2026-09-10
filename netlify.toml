@@ -2,7 +2,9 @@
 # Las cabeceras de cache se leen de public/_headers, que Vite copia tal cual a dist/.
 
 [build]
-  command = "npm run build"
+  # $URL lo pone Netlify con el dominio del sitio. Hace falta para que las etiquetas
+  # de vista previa lleven URL absoluta y WhatsApp muestre la foto del producto.
+  command = "VITE_SITE_URL=$URL npm run build"
   publish = "dist"
 
 [build.environment]
@@ -13,3 +15,4 @@
 #   VITE_WHATSAPP  numero que recibe los pedidos, indicativo + numero, sin + ni espacios
 #   VITE_STORE     nombre de la tienda
 #   VITE_TAGLINE   frase bajo el nombre
+#   VITE_SITE_URL  se rellena sola desde $URL; solo hace falta tocarla con dominio propio

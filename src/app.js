@@ -34,9 +34,16 @@ import "./styles.css";
 
   // ------------------------------------------------------------------ util
 
+  /* Enlace a la foto del producto, resuelto contra la direccion actual: funciona igual en
+     local, en una vista previa de Netlify o en el dominio definitivo, sin configurar nada.
+     Va directo al archivo que ya publica el sitio, sin paginas ni archivos extra. */
+  function fotoProducto(product) {
+    return new URL("img/full/" + product.ref + ".webp", location.href).href;
+  }
+
   function waLink(product, size) {
     return "https://wa.me/" + CFG.WHATSAPP + "?text=" +
-      encodeURIComponent(CFG.MSG(product, size));
+      encodeURIComponent(CFG.MSG(product, size, fotoProducto(product)));
   }
 
   function readURL() {
