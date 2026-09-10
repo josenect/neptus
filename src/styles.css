@@ -126,6 +126,36 @@ button { font: inherit; color: inherit; }
   text-overflow: ellipsis;
 }
 
+/* Grupo de acciones de la derecha de la cabecera. */
+.top-acciones { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* Abre el selector de categorias. De contorno y no macizo: la accion principal de la cabecera
+   es WhatsApp, y dos botones rellenos competirian entre si. */
+.cat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cat-btn svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
+.cat-btn:active { background: rgba(255, 255, 255, .1); }
+
+/* En pantallas estrechas (360px) el logo, este boton y el de WhatsApp no caben con texto:
+   se queda solo el icono. */
+@media (max-width: 379px) {
+  .cat-btn { padding: 8px; }
+  .cat-btn span { display: none; }
+}
+
 .wa-btn {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--wa); color: #fff;
@@ -710,7 +740,30 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   max-height: none;
 }
 
+/* Rueda de carga del detalle. Solo aparece si la foto no estaba en cache: al cambiar de
+   producto rapido es lo unico que confirma que el toque entro. */
+.lb-img.cargando::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 3px solid rgba(255, 255, 255, .25);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: girar .7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Mientras carga no tiene sentido ofrecer la lupa: no hay nada que ampliar. */
+.lb-img.cargando .lb-zoom { opacity: 0; pointer-events: none; }
+
 .lb-zoom {
+  transition: opacity .2s ease;
   position: absolute;
   right: 12px;
   bottom: 12px;
@@ -880,7 +933,26 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   to   { opacity: 1; transform: none; }
 }
 
+.bien-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .bien-top {
+  position: relative;
   background: var(--dark);
   padding: 26px 16px 22px;
   text-align: center;

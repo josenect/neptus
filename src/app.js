@@ -531,14 +531,47 @@ import "./styles.css";
     }
   }
 
+  var tokenFoto = 0;   // descarta cargas que llegan tarde al pasar rapido de producto
+
+  /* Pinta la foto del detalle. Se hace en dos tiempos a proposito: al cambiar el src de un
+     <img>, la foto ANTERIOR se queda a la vista hasta que la nueva termina de decodificar.
+     Eso hacia dos cosas raras: al abrir otro producto asomaba un instante el anterior, y al
+     usar las flechas no se sabia si el toque habia entrado o no.
+
+     Se descarga aparte y solo se cambia el src cuando ya esta lista; mientras tanto, rueda.
+     Si la foto ya estaba en cache el cambio es inmediato y la rueda no llega a verse. */
+  function pintarFoto(ref, alt) {
+    var img = $("lb-img");
+    var caja = $("lb-img-box");
+    var url = "img/full/" + ref + ".webp";
+    var mio = ++tokenFoto;
+
+    img.src = VACIA;          // fuera la anterior ya mismo
+    img.alt = alt;
+    caja.classList.add("cargando");
+
+    function listo() {
+      if (mio !== tokenFoto) return;   // llego tarde: ya se pidio otra
+      img.src = url;
+      caja.classList.remove("cargando");
+    }
+
+    var pre = new Image();
+    pre.onload = listo;
+    pre.onerror = function () {
+      if (mio === tokenFoto) caja.classList.remove("cargando");
+    };
+    pre.src = url;
+    if (pre.complete) listo();   // estaba en cache: ni parpadeo ni rueda
+  }
+
   function openLightbox(index) {
     LB_INDEX = index;
     var p = VIEW[index];
     if (!p) return;
     LB_SIZE = p.sizes.length ? p.sizes[0] : null;
 
-    $("lb-img").src = "img/full/" + p.ref + ".webp";
-    $("lb-img").alt = p.cat + " referencia " + p.ref;
+    pintarFoto(p.ref, p.cat + " referencia " + p.ref);
     $("lb-cat").textContent = p.cat + (p.sub ? " · " + p.sub : "");
     $("lb-ref").textContent = p.ref;
 
@@ -618,13 +651,17 @@ import "./styles.css";
     }, espera);
   }
 
+  /* sessionStorage y no localStorage: la memoria dura lo que dure la pestaña. Cada enlace que
+     se manda por WhatsApp abre una pestaña nueva, y ahi es justo cuando el selector sirve;
+     con localStorage se preguntaba una vez por aparato y nunca mas. Moverse, filtrar o
+     recargar dentro de la misma pestaña no vuelve a preguntar. */
   function yaVinoAntes() {
-    try { return !!localStorage.getItem(CLAVE_VISTO); }
+    try { return !!sessionStorage.getItem(CLAVE_VISTO); }
     catch (e) { return true; }   // navegacion privada: mejor no molestar
   }
 
   function marcarVisto() {
-    try { localStorage.setItem(CLAVE_VISTO, "1"); } catch (e) { /* da igual */ }
+    try { sessionStorage.setItem(CLAVE_VISTO, "1"); } catch (e) { /* da igual */ }
   }
 
   /* No aparece si el enlace ya trae filtros: quien llega por un enlace de WhatsApp con la
@@ -634,21 +671,40 @@ import "./styles.css";
     return !yaVinoAntes();
   }
 
+  /* Cerrar sin tocar el estado. Hace falta porque las dos salidas que habia cambian el filtro:
+     elegir categoria lo pone, y "Ver todo el catalogo" lo BORRA. Quien abre el selector desde
+     la cabecera estando en CAMISAS necesita poder salir sin perder lo que tenia. */
+  function salirBienvenida() {
+    marcarVisto();
+    $("bienvenida").hidden = true;
+    document.body.style.overflow = "";
+  }
+
   function cerrarBienvenida(categoria) {
     marcarVisto();
     bloqueoImagenes = false;
     $("bienvenida").hidden = true;
     document.body.classList.remove("arrancando");
     document.body.style.overflow = "";
-    if (categoria) {
-      state.cat = categoria;
-      state.page = 1;
+    /* Sin categoria significa "ver todo el catalogo", asi que se limpian los filtros. Antes
+       solo se aplicaba la categoria cuando venia una: en el arranque daba igual porque no
+       habia nada puesto, pero abriendo el selector desde la cabecera estando en CAMISAS el
+       boton no hacia absolutamente nada pese a lo que promete su texto. */
+    state.cat = categoria || "";
+    if (!categoria) {
+      state.brand = "";
+      state.size = "";
+      state.q = "";
+      $("q").value = "";
     }
+    state.page = 1;
     commit();
     cargarVisibles();   // ahora si: a pedir las fotos que se vean
   }
 
-  function mostrarBienvenida() {
+  function mostrarBienvenida(manual) {
+    // En el arranque no hay salida: hay que elegir algo. Abierto a mano, si.
+    $("bien-x").hidden = !manual;
     var caja = $("bien-grid");
     caja.textContent = "";
     DATA.categories.forEach(function (c) {
@@ -682,7 +738,6 @@ import "./styles.css";
     var total = DATA.products.length.toLocaleString("es-CO");
     $("bien-hola").textContent = total + " productos · " + DATA.categories.length + " categorías";
     $("bien-total").textContent = "(" + total + ")";
-    $("bien-todo").addEventListener("click", function () { cerrarBienvenida(null); });
     $("bienvenida").hidden = false;
     document.body.style.overflow = "hidden";
   }
@@ -757,6 +812,12 @@ import "./styles.css";
     wirePanel();
     wireScrollHints();
     wireCargaImagenes();
+
+    /* Enganchados aqui y no dentro de mostrarBienvenida(): esa funcion corre en cada apertura
+       y los manejadores se irian acumulando (a la tercera, "Ver todo" dispararia tres veces). */
+    $("bien-todo").addEventListener("click", function () { cerrarBienvenida(null); });
+    $("bien-x").addEventListener("click", salirBienvenida);
+    $("abrir-catalogo").addEventListener("click", function () { mostrarBienvenida(true); });
     wireBarra();
 
     window.addEventListener("popstate", function () {
