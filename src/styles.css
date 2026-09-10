@@ -150,6 +150,55 @@ button { font: inherit; color: inherit; }
   padding: 10px 0 4px;
 }
 
+/* La barra se recoge al bajar y solo vuelve al llegar arriba del todo. Se mueve con
+   transform, que no toca el flujo: el contenido no pega un salto al recogerse.
+   Animacion larga a proposito: se lee como que la barra se retira, no como un corte.
+   Solo en movil; en escritorio hay alto de sobra y se queda fija. */
+@media (max-width: 699px) {
+  .filters {
+    transition: transform .75s cubic-bezier(.22, .61, .36, 1);
+    will-change: transform;
+  }
+  .filters.oculto { transform: translateY(calc(-100% - 1px)); }
+}
+
+/* Pestana con la flecha. Aparece cuando la barra se recoge y la devuelve de un toque. */
+.tirador {
+  position: fixed;
+  top: calc(var(--top-h) + 6px);
+  left: 50%;
+  z-index: 19;              /* por debajo de la barra: al bajar ella, la tapa */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 0 999px 999px;
+  background: var(--dark);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(10, 12, 16, .28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -16px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.tirador svg { width: 20px; height: 20px; fill: currentColor; }
+
+@media (max-width: 699px) {
+  .tirador { display: inline-flex; }
+  .filters.oculto ~ .tirador {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+  /* Con el panel abierto estorba. */
+  body.panel-abierto .tirador,
+  .arrancando .tirador { opacity: 0; pointer-events: none; }
+}
+
 .search-row { display: flex; gap: 8px; align-items: center; }
 
 .search { position: relative; flex: 1; min-width: 0; }

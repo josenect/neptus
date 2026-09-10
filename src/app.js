@@ -659,6 +659,44 @@ import "./styles.css";
     document.body.style.overflow = "hidden";
   }
 
+  // ------------------------------------------------------------------ recoger la barra
+
+  var UMBRAL_BARRA = 150;   // arriba del todo la barra siempre esta
+  var ultimoYBarra = 0;
+
+  /* Tres reglas y ninguna mas:
+       - arriba del todo -> visible
+       - bajando         -> se recoge
+       - subiendo        -> se queda como este
+     Subir NO la despliega a proposito: reaparecia sola tapando el catalogo justo cuando uno
+     esta recorriendolo. Para verla antes de llegar arriba esta la pestaña de la flecha. */
+  function actualizarBarra() {
+    if (document.body.classList.contains("panel-abierto")) return;
+    var y = window.scrollY;
+    var bajando = y > ultimoYBarra;
+    ultimoYBarra = y;
+
+    if (y <= UMBRAL_BARRA) $("filters").classList.remove("oculto");
+    else if (bajando) $("filters").classList.add("oculto");
+  }
+
+  function wireBarra() {
+    var ultimo = 0, cola = null;
+    window.addEventListener("scroll", function () {
+      var ahora = Date.now();
+      if (ahora - ultimo >= 100) { ultimo = ahora; actualizarBarra(); }
+      // Evaluacion final al parar: si se pierde el ultimo evento del gesto, la barra puede
+      // quedarse recogida estando arriba del todo y ahi si se ve la franja vacia.
+      clearTimeout(cola);
+      cola = setTimeout(actualizarBarra, 130);
+    }, { passive: true });
+
+    $("tirador").addEventListener("click", function () {
+      $("filters").classList.remove("oculto");
+      ultimoYBarra = window.scrollY;   // que el proximo gesto se mida desde aqui
+    });
+  }
+
   function wireControls() {
     var input = $("q");
     input.value = state.q;
@@ -683,6 +721,7 @@ import "./styles.css";
     wirePanel();
     wireScrollHints();
     wireCargaImagenes();
+    wireBarra();
 
     window.addEventListener("popstate", function () {
       readURL();
