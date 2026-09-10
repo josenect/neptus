@@ -154,8 +154,11 @@ button { font: inherit; color: inherit; }
    boton grande que dice "Pedir por WhatsApp". "Catálogo" en cambio no se adivina desde un
    icono de cuadricula. */
 @media (max-width: 379px) {
-  .wa-btn { padding: 8px; }
-  .wa-btn span { display: none; }
+  /* Acotado a la cabecera: el boton grande de dentro del producto usa la misma clase
+     (.wa-btn .wa-big) y se quedaba tambien sin su texto "Pedir por WhatsApp", que ahi es
+     justo lo que hay que leer. */
+  .top .wa-btn { padding: 8px; }
+  .top .wa-btn span { display: none; }
 }
 
 .wa-btn {
