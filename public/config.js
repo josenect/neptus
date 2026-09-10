@@ -18,6 +18,11 @@ window.CONFIG = {
   // Cuantos productos se muestran por pagina.
   PER_PAGE: 48,
 
+  // Viendo el catalogo completo, cuantos productos seguidos de la misma categoria antes de
+  // pasar a la siguiente. Con 2, la primera pagina ensena las 18 categorias en vez de vaciar
+  // la primera entera. Subirlo agrupa mas; bajarlo a 1 alterna producto a producto.
+  POR_CATEGORIA: 2,
+
   // Mensaje que se escribe solo en WhatsApp al pulsar "Pedir por WhatsApp".
   // El enlace apunta a la foto del producto: el dueno lo toca y la ve, sin tener que
   // buscarla entre 1.016 referencias.

@@ -149,11 +149,13 @@ button { font: inherit; color: inherit; }
 .cat-btn svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
 .cat-btn:active { background: rgba(255, 255, 255, .1); }
 
-/* En pantallas estrechas (360px) el logo, este boton y el de WhatsApp no caben con texto:
-   se queda solo el icono. */
+/* En pantallas estrechas los tres elementos no caben con texto. El que pierde la palabra es
+   WhatsApp y no este: el logo verde se reconoce solo, y ademas dentro de cada producto hay un
+   boton grande que dice "Pedir por WhatsApp". "Catálogo" en cambio no se adivina desde un
+   icono de cuadricula. */
 @media (max-width: 379px) {
-  .cat-btn { padding: 8px; }
-  .cat-btn span { display: none; }
+  .wa-btn { padding: 8px; }
+  .wa-btn span { display: none; }
 }
 
 .wa-btn {
@@ -472,6 +474,7 @@ body.panel-abierto .rows { display: none; }
   border-radius: 18px 18px 0 0;
   max-height: 84dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 0 calc(12px + env(safe-area-inset-bottom));
   transform: translateY(101%);
   transition: transform .22s ease;
@@ -678,11 +681,13 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   margin: 0;
   width: 100vw;
   max-width: 100vw;
-  /* svh y no dvh: svh es la altura con las barras del navegador desplegadas, la mas pequena
-     posible. Asi el boton de pedir nunca queda debajo de la barra de Safari/Chrome movil
-     mientras esta se muestra u oculta al hacer scroll. */
-  height: 100svh;
-  max-height: 100svh;
+  /* dvh y no svh. svh es la altura MINIMA del viewport (con las barras del navegador
+     desplegadas): cuando esas barras se retraen la pantalla crece y el dialogo se quedaba
+     corto, dejando ver el catalogo por debajo. dvh es la altura visible en cada momento, que
+     es justo lo que tiene que ocupar. El boton de pedir sigue a salvo porque quien se encoge
+     es la foto (.lb-img es flex 1 1 0), no el bloque de abajo. */
+  height: 100dvh;
+  max-height: 100dvh;
   background: #fff;
   border-radius: 0;
   overflow: hidden;
@@ -730,6 +735,7 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
 .lb-pan.zoom {
   display: block;
   overflow: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   cursor: zoom-out;
 }
@@ -788,7 +794,10 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
 
 .lb-info {
   flex: 0 0 auto;
-  max-height: 52svh;
+  /* Sin esto, al llegar al final de esta zona el gesto sigue en la pagina de detras y se ve
+     el catalogo corriendose por debajo del detalle. */
+  overscroll-behavior: contain;
+  max-height: 52dvh;
   overflow-y: auto;
   padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
 }
@@ -975,6 +984,7 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 18px 14px 18px;
   width: 100%;
   max-width: 860px;

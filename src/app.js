@@ -76,12 +76,49 @@ import "./styles.css";
       p.sizes.indexOf(q) !== -1;
   }
 
+  var ordenVariado = null;   // catalogo completo con las categorias intercaladas
+
+  /* Reordena TODO el catalogo intercalando categorias en tandas. Sin esto, sin filtros los
+     productos salen agrupados por categoria y la primera pagina se la comen las dos o tres
+     primeras: nunca aparece un reloj ni un perfume sin filtrar antes.
+     No se descarta nada, solo cambia el orden: la paginacion sigue cubriendo los 1.016. */
+  function construirOrdenVariado() {
+    var porCat = {};
+    DATA.products.forEach(function (p) {
+      (porCat[p.cat] = porCat[p.cat] || []).push(p);
+    });
+    var nombres = DATA.categories.map(function (c) { return c.name; });
+    var tanda = Math.max(1, CFG.POR_CATEGORIA || 2);
+    var salida = [];
+    var desde = 0;
+    var quedan = true;
+    while (quedan) {
+      quedan = false;
+      for (var n = 0; n < nombres.length; n++) {
+        var lista = porCat[nombres[n]];
+        if (!lista) continue;
+        for (var k = 0; k < tanda; k++) {
+          if (desde + k < lista.length) {
+            salida.push(lista[desde + k]);
+            quedan = true;
+          }
+        }
+      }
+      desde += tanda;
+    }
+    return salida;
+  }
+
   function applyFilters() {
     var q = state.q.trim().toUpperCase();
     /* Buscar manda sobre los filtros: si el cliente teclea una referencia estando dentro de
        una categoria, la busca en TODO el catalogo en vez de decir que no existe. Los filtros
        no se borran, quedan en espera y vuelven a aplicarse al vaciar el buscador. */
-    VIEW = DATA.products.filter(function (p) {
+    /* Solo se intercala cuando no hay categoria elegida ni busqueda: dentro de una categoria
+       no hay nada que alternar, y una busqueda es algo dirigido. */
+    var fuente = (!state.cat && !q) ? (ordenVariado || DATA.products) : DATA.products;
+
+    VIEW = fuente.filter(function (p) {
       if (q) return coincide(p, q);
       if (state.cat && p.cat !== state.cat) return false;
       if (state.brand && p.brand !== state.brand) return false;
@@ -600,7 +637,12 @@ import "./styles.css";
     $("lb-next").disabled = index >= VIEW.length - 1;
 
     ampliar(false);
-    if (!lb.open) lb.showModal();
+    if (!lb.open) {
+      lb.showModal();
+      // Sin esto el fondo sigue desplazandose detras del detalle: en movil el gesto se
+      // encadena a la pagina y se ve el catalogo corriendose por debajo.
+      document.body.style.overflow = "hidden";
+    }
   }
 
   function step(delta) {
@@ -617,10 +659,19 @@ import "./styles.css";
     if (e.target !== $("lb-img")) return;
     if ($("lb-pan").classList.contains("zoom")) ampliar(false);
   });
-  $("lb-x").addEventListener("click", function () { lb.close(); });
+  /* Cerrar y soltar el bloqueo del fondo en el mismo sitio. El evento "close" del <dialog>
+     seria lo elegante, pero se queda solo como red para la tecla Escape, que cierra sin pasar
+     por ningun manejador nuestro. */
+  function cerrarDetalle() {
+    lb.close();
+    document.body.style.overflow = "";
+  }
+
+  lb.addEventListener("close", function () { document.body.style.overflow = ""; });
+  $("lb-x").addEventListener("click", cerrarDetalle);
   $("lb-prev").addEventListener("click", function () { step(-1); });
   $("lb-next").addEventListener("click", function () { step(1); });
-  lb.addEventListener("click", function (e) { if (e.target === lb) lb.close(); });
+  lb.addEventListener("click", function (e) { if (e.target === lb) cerrarDetalle(); });
   document.addEventListener("keydown", function (e) {
     if (!lb.open) return;
     if (e.key === "ArrowLeft") step(-1);
@@ -838,6 +889,7 @@ import "./styles.css";
     .then(function (json) {
       DATA = json;
       DATA.categories.forEach(function (c) { CAT_SIZES[c.name] = c.sizes; });
+      ordenVariado = construirOrdenVariado();
 
       document.title = CFG.STORE + " · Catálogo";
       $("foot-store").textContent = CFG.STORE;
