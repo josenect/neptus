@@ -35,6 +35,51 @@ button { font: inherit; color: inherit; }
 
 .wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 14px; }
 
+/* Mientras dura la entrada el catalogo no se pinta. Sin esto asomaba por detras justo en
+   mitad del cruce: el logo baja de opacidad y el selector sube, y en el punto medio ninguno
+   de los dos es opaco. Va como clase en el <body> del HTML para que aplique desde el primer
+   pintado, sin esperar al JS. */
+.arrancando .top,
+.arrancando .filters,
+.arrancando main,
+.arrancando .foot { visibility: hidden; }
+
+/* Fondo solido durante la entrada: el selector aparece sobre el mismo negro del logo, no
+   sobre una pagina en blanco. */
+.arrancando .bien-fondo { background: var(--dark); }
+
+/* ---------------------------------------------------------------- cargando */
+
+.cargando {
+  position: fixed;
+  inset: 0;
+  z-index: 60;           /* por encima de todo, incluido el selector de bienvenida */
+  background: var(--dark);
+  display: grid;
+  place-items: center;
+  transition: opacity .6s ease, visibility .6s;
+}
+.cargando img {
+  height: 42px;
+  max-width: 72vw;
+  width: auto;
+  /* Entra una vez y luego respira: en 2 segundos se ve el gesto completo. */
+  animation: entrada .5s cubic-bezier(.2, .8, .3, 1) both, latido 1.7s ease-in-out .5s infinite;
+}
+/* El logo se va disolviendo y creciendo un pelin, no cortando de golpe. */
+.cargando.fuera { opacity: 0; pointer-events: none; }
+.cargando.fuera img { animation: none; transform: scale(1.06); transition: transform .6s ease; }
+
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(8px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes latido {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .62; }
+}
+
 /* ---------------------------------------------------------------- cabecera */
 
 .top {
@@ -105,57 +150,6 @@ button { font: inherit; color: inherit; }
   padding: 10px 0 4px;
 }
 
-/* Boton flotante de filtros, abajo y al centro: es la zona del pulgar, y arriba chocaba con
-   la barra cada vez que esta reaparecia al subir. Sube desde abajo, igual que el panel que
-   abre. Ya no depende de si la barra esta oculta: esta siempre que se haya bajado un poco,
-   asi no hay que adivinar nada. Fuera de movil no existe. */
-.fab {
-  position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  left: 50%;
-  z-index: 25;
-  display: none;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--dark);
-  color: #fff;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 22px rgba(10, 12, 16, .34);
-  pointer-events: none;
-  transform: translate(-50%, 160%);
-  transition: transform .24s cubic-bezier(.2, .8, .3, 1);
-}
-.fab svg { width: 15px; height: 15px; fill: currentColor; }
-
-@media (max-width: 699px) {
-  .fab { display: inline-flex; }
-  .fab.visible {
-    pointer-events: auto;
-    transform: translate(-50%, 0);
-  }
-  /* Con el panel abierto sobra: seria un boton para abrir lo que ya esta abierto. */
-  .filters--open ~ .fab { transform: translate(-50%, 160%); pointer-events: none; }
-}
-
-/* Al bajar se esconde detras de la cabecera (que tiene mas z-index) y al subir vuelve.
-   Se mueve con transform y no encogiendo la altura: transform no toca el flujo, asi que el
-   contenido no pega un salto de 170px al ocultarse. Solo en movil, que es donde el alto
-   escasea; en escritorio la barra se queda siempre a la vista. */
-@media (max-width: 699px) {
-  .filters {
-    transition: transform .22s ease;
-    will-change: transform;
-  }
-  .filters.oculto {
-    transform: translateY(calc(-100% - 1px));
-  }
-}
-
 .search-row { display: flex; gap: 8px; align-items: center; }
 
 .search { position: relative; flex: 1; min-width: 0; }
@@ -192,8 +186,8 @@ button { font: inherit; color: inherit; }
   }
 }
 
-/* En movil: etiqueta encima y todos los chips a la vista en varias lineas. Con 18 categorias,
-   una fila con scroll horizontal escondia 15 de ellas y comia ancho con la etiqueta lateral. */
+/* En el panel: etiqueta encima y los chips en varias lineas, para ver las 18 categorias
+   de golpe. En escritorio (.rows) pasan a fila con etiqueta al lado. */
 .chip-block { margin-bottom: 16px; }
 
 .chip-label {
@@ -213,10 +207,15 @@ button { font: inherit; color: inherit; }
 .chips-wrap { position: relative; min-width: 0; }
 .chips-nav { display: none; }
 
-/* Las filas de la barra se desplazan a lo ancho, tambien en movil: asi los filtros estan
-   siempre a la vista sin comerse media pantalla. Los chips del panel van en varias lineas,
-   que para eso esta el panel. */
-.rows { margin-top: 10px; }
+/* Los chips a la vista tambien en movil. Sin etiquetas (CATEGORIA/TALLA) para no gastar una
+   linea por fila: los nombres de categoria y las tallas se entienden solos. El boton
+   "Filtros" abre el panel, que es donde se ven las 18 categorias de golpe. */
+.rows { margin-top: 9px; }
+.rows .chip-label { display: none; }
+
+/* Mientras el panel esta abierto la barra no pinta chips: es justo lo que el panel muestra,
+   y verlos dos veces era lo que confundia. */
+body.panel-abierto .rows { display: none; }
 .rows .chip-block { margin-bottom: 9px; }
 .rows .chips {
   flex-wrap: nowrap;
@@ -228,7 +227,7 @@ button { font: inherit; color: inherit; }
 }
 .rows .chips::-webkit-scrollbar { display: none; }
 
-/* El degradado avisa de que la fila sigue. En movil no hay flechas: se desliza con el dedo. */
+/* El degradado y las flechas avisan de que la fila sigue hacia los lados. */
 .rows .chips-wrap::before,
 .rows .chips-wrap::after {
   content: "";
@@ -246,8 +245,8 @@ button { font: inherit; color: inherit; }
 .rows .chips-wrap.can-left::before,
 .rows .chips-wrap.can-right::after { opacity: 1; }
 
-/* Las flechas tambien en movil: el degradado solo insinua, la flecha lo dice. Sin ellas no
-   quedaba claro que la fila de categorias sigue hacia los lados. */
+/* El degradado solo insinua; la flecha lo dice. Sin ellas no quedaba claro que la fila
+   de categorias continua. */
 .rows .chips-nav {
   display: grid;
   place-items: center;
@@ -334,11 +333,13 @@ button { font: inherit; color: inherit; }
   opacity: .75;
 }
 
+/* Por encima de la cabecera (30) y de la barra (20): el panel y su fondo son hermanos del
+   body, asi que compiten con ellos. Cuando vivian dentro de .filters bastaba con 1 y 2. */
 .scrim {
   position: fixed;
   inset: 0;
   background: rgba(10, 12, 16, .5);
-  z-index: 1;
+  z-index: 35;
   animation: fade .18s ease;
 }
 @keyframes fade { from { opacity: 0 } }
@@ -348,7 +349,7 @@ button { font: inherit; color: inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
+  z-index: 36;
   background: #fff;
   border-radius: 18px 18px 0 0;
   max-height: 84dvh;
@@ -359,7 +360,7 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 -10px 34px rgba(10, 12, 16, .22);
   visibility: hidden;
 }
-.filters--open .panel { transform: none; visibility: visible; }
+body.panel-abierto .panel { transform: none; visibility: visible; }
 
 .panel-head {
   display: flex;
@@ -668,6 +669,7 @@ button { font: inherit; color: inherit; }
 
   /* En escritorio sobra el panel entero: las filas de la barra ya muestran todo. */
   .filters-btn, .pills, .scrim, .panel { display: none !important; }
+  .rows .chip-label { display: block; }
 
   /* Etiqueta al lado en vez de encima: hay ancho de sobra y ahorra alto. */
   .rows { margin-top: 4px; }
@@ -703,4 +705,159 @@ button { font: inherit; color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+/* ---------------------------------------------------------------- bienvenida */
+
+/* Pantalla de entrada: banda oscura con el logo arriba para que se lea como el inicio de la
+   tienda y no como un aviso, y fichas pequenas para que quepan muchas categorias de un
+   vistazo sin tener que desplazar.
+
+   Capa normal y no <dialog> con showModal(): un dialogo modal va a la top layer, por encima
+   de cualquier z-index, y entonces no hay forma de que el logo del cargador se quede delante
+   mientras se cruzan. Con z-index normal si se puede encadenar el relevo. */
+.bien-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 12, 16, .72);
+  display: grid;
+  place-items: stretch;
+  animation: bienFondo .4s ease both;
+}
+
+.bien {
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  min-height: 0;
+  /* Tres piezas: logo arriba, rejilla que se desplaza en medio y el boton siempre abajo.
+     Asi "Ver todo" no queda enterrado al final de 18 categorias. */
+  display: flex;
+  flex-direction: column;
+  animation: bienEntra .42s cubic-bezier(.2, .8, .3, 1) both;
+}
+.bien-top, .bien-foot { flex: none; }
+@keyframes bienFondo { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes bienEntra {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.bien-top {
+  background: var(--dark);
+  padding: 26px 16px 22px;
+  text-align: center;
+}
+
+.bien-logo {
+  height: 26px;
+  width: auto;
+  margin: 0 auto;
+}
+
+.bien-hola {
+  margin: 12px 0 0;
+  color: #a8adb9;
+  font-size: 12.5px;
+  letter-spacing: .01em;
+}
+
+.bien-in {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 14px 18px;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.bien-in:focus { outline: none; }
+
+.bien-foot {
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+}
+
+.bien-titulo {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.bien-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+  gap: 8px;
+}
+
+.bien-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.bien-item:active { transform: scale(.97); }
+
+.bien-item img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--bg-soft);
+}
+
+.bien-item b {
+  display: block;
+  padding: 6px 7px 1px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.005em;
+}
+.bien-item span {
+  display: block;
+  padding: 0 7px 7px;
+  font-size: 9.5px;
+  color: var(--ink-soft);
+}
+
+.bien-todo {
+  display: block;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  border: 0;
+  background: var(--dark);
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bien-todo span { color: #a8adb9; font-weight: 500; }
+
+@media (min-width: 700px) {
+  .bien-fondo { place-items: center; }
+  .bien {
+    width: min(820px, 100vw);
+    max-height: 90dvh;
+    border-radius: 16px;
+  }
+  .bien-top { padding: 30px 20px 26px; }
+  .bien-logo { height: 30px; }
+  .bien-in { padding: 22px 26px; }
+  .bien-foot { padding: 14px 26px; }
+  .bien-grid { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); }
+  .bien-item b { font-size: 11.5px; }
+  .bien-item span { font-size: 10px; }
 }

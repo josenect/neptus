@@ -169,8 +169,9 @@ import "./styles.css";
     }
   }
 
-  /* Los filtros viven en dos sitios: la barra (siempre visible, en filas que se desplazan)
-     y el panel de movil (todo desplegado). Se pintan los mismos chips en ambos. */
+  /* Los chips se pintan en dos juegos de contenedores: las filas de la barra (que solo se
+     ven en escritorio) y el panel (el unico sitio donde se filtra en movil). Solo uno de los
+     dos esta visible en cada tamano de pantalla, asi que nunca aparecen duplicados. */
   function pintar(ids, construir) {
     ids.forEach(function (id) {
       var box = $(id);
@@ -280,11 +281,49 @@ import "./styles.css";
       box.appendChild(b);
     });
 
-    [$("fbadge"), $("fab-badge")].forEach(function (badge) {
-      if (!badge) return;
-      badge.hidden = active.length === 0;
-      badge.textContent = active.length;
-    });
+    var badge = $("fbadge");
+    badge.hidden = active.length === 0;
+    badge.textContent = active.length;
+  }
+
+  /* Carga por proximidad. Con loading="lazy" el navegador pedia las 48 imagenes de la pagina
+     de golpe (2,1 MB medidos), porque al insertarse todas juntas las considera casi visibles.
+     Aqui la imagen no tiene src hasta que se acerca a la pantalla.
+
+     Se hace midiendo posiciones en el scroll y no con IntersectionObserver a proposito: es
+     igual de barato con 48 imagenes y se puede comprobar de verdad. */
+  var MARGEN_CARGA = 700;   // px por delante de la pantalla
+  var bloqueoImagenes = false;
+
+  // GIF transparente de 1x1. Sin un src valido el navegador pinta el texto alternativo y la
+  // rejilla se ve rota mientras las fotos no han llegado; con esto se ve el fondo gris.
+  var VACIA = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
+  function cargarVisibles() {
+    // Mientras se ve el cargador o el selector no se gastan datos en fotos tapadas.
+    if (bloqueoImagenes) return;
+    var pendientes = $("grid").querySelectorAll("img[data-src]");
+    var alto = window.innerHeight || document.documentElement.clientHeight;
+    for (var i = 0; i < pendientes.length; i++) {
+      var img = pendientes[i];
+      var r = img.getBoundingClientRect();
+      if (r.top < alto + MARGEN_CARGA && r.bottom > -MARGEN_CARGA) {
+        img.src = img.getAttribute("data-src");
+        img.removeAttribute("data-src");
+      }
+    }
+  }
+
+  function wireCargaImagenes() {
+    var ultimo = 0, cola = null;
+    function revisar() {
+      var ahora = Date.now();
+      if (ahora - ultimo >= 100) { ultimo = ahora; cargarVisibles(); }
+      clearTimeout(cola);
+      cola = setTimeout(cargarVisibles, 120);
+    }
+    window.addEventListener("scroll", revisar, { passive: true });
+    window.addEventListener("resize", revisar);
   }
 
   function card(product, index) {
@@ -294,7 +333,8 @@ import "./styles.css";
 
     var img = document.createElement("img");
     img.className = "card-img";
-    img.src = "img/grid/" + product.ref + ".webp";
+    img.src = VACIA;
+    img.setAttribute("data-src", "img/grid/" + product.ref + ".webp");
     img.width = product.w;
     img.height = product.h;
     img.loading = "lazy";
@@ -344,6 +384,7 @@ import "./styles.css";
     page.forEach(function (p, i) { frag.appendChild(card(p, start + i)); });
     grid.appendChild(frag);
 
+    cargarVisibles();
     $("empty").hidden = VIEW.length !== 0;
     $("empty-msg").textContent = state.q
       ? 'No se encontró nada para "' + state.q + '" en todo el catálogo.'
@@ -429,53 +470,20 @@ import "./styles.css";
   // ------------------------------------------------------------------ panel de filtros
 
   function setPanel(open) {
-    $("filters").classList.toggle("filters--open", open);
+    document.body.classList.toggle("panel-abierto", open);
     $("scrim").hidden = !open;
     $("open-filters").setAttribute("aria-expanded", open ? "true" : "false");
     // Bloquea el scroll del catalogo mientras el panel esta encima.
     document.body.style.overflow = open ? "hidden" : "";
     if (open) $("panel").scrollTop = 0;
-    actualizarBarra();
   }
 
   /* La barra de filtros ocupa ~170px de alto. En un movil de 640 eso es un tercio de la
      pantalla mientras el cliente recorre el catalogo, asi que se esconde al bajar y vuelve
      al subir, como en cualquier app. */
-  var UMBRAL_BARRA = 150;   // altura a partir de la cual se considera que ya no estamos arriba
-
-  /* No depende de la direccion del scroll, solo de la posicion: la barra de filtros pertenece
-     a la parte de arriba de la pagina y el boton de abajo cubre todo lo demas. Antes la barra
-     reaparecia al menor movimiento hacia arriba y se quedaba tapando el catalogo mientras uno
-     seguia subiendo; asi es predecible y nunca hay que adivinar. */
-  function actualizarBarra() {
-    var filtros = $("filters");
-    var panelAbierto = filtros.classList.contains("filters--open");
-    var lejosDeArriba = window.scrollY > UMBRAL_BARRA;
-    filtros.classList.toggle("oculto", lejosDeArriba && !panelAbierto);
-    $("fab").classList.toggle("visible", lejosDeArriba && !panelAbierto);
-  }
-
-  function wireAutoHide() {
-    var ultimoProceso = 0;
-
-    // Limitador por tiempo en vez de requestAnimationFrame: solo se cambia una clase, no hace
-    // falta ir al ritmo del repintado, y asi el comportamiento es verificable sin depender
-    // de que el navegador sirva un frame.
-    window.addEventListener("scroll", function () {
-      var ahora = Date.now();
-      if (ahora - ultimoProceso < 80) return;
-      ultimoProceso = ahora;
-      actualizarBarra();
-    }, { passive: true });
-  }
-
-  function wireFab() {
-    $("fab").addEventListener("click", function () { setPanel(true); });
-  }
-
   function wirePanel() {
     $("open-filters").addEventListener("click", function () {
-      setPanel(!$("filters").classList.contains("filters--open"));
+      setPanel(!document.body.classList.contains("panel-abierto"));
     });
     $("close-filters").addEventListener("click", function () { setPanel(false); });
     $("panel-apply").addEventListener("click", function () { setPanel(false); });
@@ -553,6 +561,97 @@ import "./styles.css";
 
   // ------------------------------------------------------------------ arranque
 
+  // ------------------------------------------------------------------ bienvenida
+
+  var CLAVE_VISTO = "neptus:bienvenida";
+  var ARRANQUE = Date.now();
+  var MINIMO_CARGADOR = 2000;  // el logo se ve entero, con su animacion, aunque el catalogo
+                               // llegue en 200 ms. Si tarda mas, manda lo que tarde.
+
+  /* Quita el cargador y, si toca, abre el selector. Se espera un minimo para que el logo no
+     aparezca y desaparezca de golpe: un destello se lee como un fallo, no como una marca. */
+  function quitarCargador(despues) {
+    var espera = Math.max(0, MINIMO_CARGADOR - (Date.now() - ARRANQUE));
+    setTimeout(function () {
+      var c = $("cargando");
+      c.classList.add("fuera");
+      /* Se cruzan: el selector empieza a aparecer por debajo cuando el logo lleva un poco
+         desvaneciendose. Si se espera a que el logo termine, en el hueco entre los dos se
+         ve el catalogo desnudo un instante, y eso es lo que se notaba como un salto. */
+      if (despues) setTimeout(despues, 200);
+      setTimeout(function () { c.hidden = true; }, 620);
+    }, espera);
+  }
+
+  function yaVinoAntes() {
+    try { return !!localStorage.getItem(CLAVE_VISTO); }
+    catch (e) { return true; }   // navegacion privada: mejor no molestar
+  }
+
+  function marcarVisto() {
+    try { localStorage.setItem(CLAVE_VISTO, "1"); } catch (e) { /* da igual */ }
+  }
+
+  /* No aparece si el enlace ya trae filtros: quien llega por un enlace de WhatsApp con la
+     categoria puesta ya eligio, y volverselo a preguntar seria absurdo. */
+  function tocaBienvenida() {
+    if (state.cat || state.brand || state.size || state.q) return false;
+    return !yaVinoAntes();
+  }
+
+  function cerrarBienvenida(categoria) {
+    marcarVisto();
+    bloqueoImagenes = false;
+    $("bienvenida").hidden = true;
+    document.body.classList.remove("arrancando");
+    document.body.style.overflow = "";
+    if (categoria) {
+      state.cat = categoria;
+      state.page = 1;
+    }
+    commit();
+    cargarVisibles();   // ahora si: a pedir las fotos que se vean
+  }
+
+  function mostrarBienvenida() {
+    var caja = $("bien-grid");
+    caja.textContent = "";
+    DATA.categories.forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "bien-item";
+
+      if (c.thumb) {
+        var img = document.createElement("img");
+        img.src = "img/cat/" + c.thumb + ".webp";
+        img.width = 260;
+        img.height = 260;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.alt = "";
+        b.appendChild(img);
+      }
+
+      var nombre = document.createElement("b");
+      nombre.textContent = c.name;
+      b.appendChild(nombre);
+
+      var cuenta = document.createElement("span");
+      cuenta.textContent = c.count + (c.count === 1 ? " producto" : " productos");
+      b.appendChild(cuenta);
+
+      b.addEventListener("click", function () { cerrarBienvenida(c.name); });
+      caja.appendChild(b);
+    });
+
+    var total = DATA.products.length.toLocaleString("es-CO");
+    $("bien-hola").textContent = total + " productos · " + DATA.categories.length + " categorías";
+    $("bien-total").textContent = "(" + total + ")";
+    $("bien-todo").addEventListener("click", function () { cerrarBienvenida(null); });
+    $("bienvenida").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
   function wireControls() {
     var input = $("q");
     input.value = state.q;
@@ -576,8 +675,7 @@ import "./styles.css";
     $("empty-reset").addEventListener("click", clearAll);
     wirePanel();
     wireScrollHints();
-    wireAutoHide();
-    wireFab();
+    wireCargaImagenes();
 
     window.addEventListener("popstate", function () {
       readURL();
@@ -609,9 +707,26 @@ import "./styles.css";
 
       readURL();
       wireControls();
+      // El selector se abre ANTES de pintar: si no, commit() ya habria pedido las primeras
+      // fotos de producto y la guarda de cargarVisibles llegaria tarde.
+      var conSelector = tocaBienvenida();
+      // El selector se abre al retirar el cargador, cruzandose con el (ver quitarCargador).
+      bloqueoImagenes = conSelector;
       commit(true);
+      quitarCargador(function () {
+        if (conSelector) {
+          mostrarBienvenida();
+        } else {
+          document.body.classList.remove("arrancando");
+          cargarVisibles();
+        }
+      });
     })
     .catch(function (err) {
+      // Pase lo que pase el cargador se va: dejarlo puesto seria dejar la pantalla en negro.
+      bloqueoImagenes = false;
+      document.body.classList.remove("arrancando");   // que un fallo no deje la pagina en blanco
+      quitarCargador();
       $("count").textContent = "No se pudo cargar el catálogo (" + err.message + ").";
     });
 })();

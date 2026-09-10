@@ -32,10 +32,12 @@ REFS = os.path.join(BASE, "data", "refs.json")
 SITE = os.path.join(BASE, "public")
 IMG_GRID = os.path.join(SITE, "img", "grid")
 IMG_FULL = os.path.join(SITE, "img", "full")
+IMG_CAT = os.path.join(SITE, "img", "cat")   # una miniatura cuadrada por categoria
 
 # Tamanos de salida. Bajar estos valores es la palanca para reducir el peso del sitio.
 GRID_W, GRID_Q = 450, 72
 FULL_W, FULL_Q = 900, 72
+CAT_W, CAT_Q = 260, 68   # miniatura del selector de bienvenida, recortada en cuadrado
 SOURCE_W = 1400          # ancho que le pedimos al thumbnail de Drive
 DOWNLOAD_WORKERS = 4     # subir esto dispara los 429 de Google
 
@@ -211,6 +213,19 @@ def encode(src, ref):
         return out
 
 
+def hacer_portada(ref):
+    """Miniatura cuadrada para el selector de categorias, recortada por el centro."""
+    destino = os.path.join(IMG_CAT, ref + ".webp")
+    if os.path.exists(destino):
+        return
+    with Image.open(os.path.join(IMG_GRID, ref + ".webp")) as im:
+        lado = min(im.width, im.height)
+        izq = (im.width - lado) // 2
+        arriba = (im.height - lado) // 3     # un tercio: la prenda suele estar arriba
+        im = im.crop((izq, arriba, izq + lado, arriba + lado))
+        im.resize((CAT_W, CAT_W), Image.LANCZOS).save(destino, "WEBP", quality=CAT_Q, method=5)
+
+
 # --------------------------------------------------------------------------- main
 
 def main():
@@ -218,7 +233,7 @@ def main():
     ap.add_argument("--limit", type=int, help="procesar solo N productos (para pruebas)")
     args = ap.parse_args()
 
-    for d in (CACHE, IMG_GRID, IMG_FULL):
+    for d in (CACHE, IMG_GRID, IMG_FULL, IMG_CAT):
         os.makedirs(d, exist_ok=True)
 
     with open(TREE, encoding="utf-8") as f:
@@ -307,7 +322,16 @@ def main():
         if not items:
             continue
         sizes = sorted({s for e in items for s in e["sizes"]}, key=size_key)
-        categories.append({"name": name, "count": len(items), "sizes": sizes})
+        # El primer producto hace de portada. Miniatura propia y no la del grid: en el
+        # selector se ven 18 a la vez y las del grid pesarian el triple.
+        portada = items[0]["ref"]
+        try:
+            hacer_portada(portada)
+        except Exception as e:
+            print("  !! portada de %s: %s" % (name, e))
+            portada = None
+        categories.append({"name": name, "count": len(items),
+                           "sizes": sizes, "thumb": portada})
 
     catalog = {
         "store": "NEPTUS STORE",
@@ -326,10 +350,11 @@ def main():
     # automatica. Con --limit el catalogo esta recortado a proposito, asi que no se toca nada.
     if not args.limit:
         vivas = {e["ref"] for e in entries}
+        portadas = {c["thumb"] for c in categories if c.get("thumb")}
         borradas = 0
-        for carpeta in (IMG_GRID, IMG_FULL):
+        for carpeta, validas in ((IMG_GRID, vivas), (IMG_FULL, vivas), (IMG_CAT, portadas)):
             for nombre in os.listdir(carpeta):
-                if nombre.endswith(".webp") and nombre[:-5] not in vivas:
+                if nombre.endswith(".webp") and nombre[:-5] not in validas:
                     os.remove(os.path.join(carpeta, nombre))
                     borradas += 1
         if borradas:

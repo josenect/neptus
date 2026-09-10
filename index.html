@@ -10,10 +10,19 @@
 <meta property="og:description" content="Mira todo el catálogo y pide por WhatsApp.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
+<!-- Arranca la descarga del catalogo a la vez que la del JS. Sin esto no empieza hasta que
+     el JS se ha descargado y parseado, y hasta que llega no se pinta ni un producto. -->
+<link rel="preload" href="catalog.json" as="fetch" crossorigin>
 <link rel="icon" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 </head>
-<body>
+<body class="arrancando">
+
+<!-- Lo primero que se ve: solo el logo sobre negro mientras llega el catalogo. Va aqui
+     arriba del todo para que se pinte antes que nada. -->
+<div class="cargando" id="cargando">
+  <img src="logo.png" alt="NEPTUS" width="495" height="96">
+</div>
 
 <header class="top">
   <div class="wrap top-in">
@@ -47,8 +56,9 @@
       <button id="reset" class="reset" type="button" hidden>Limpiar filtros</button>
     </div>
 
-    <!-- Filtros siempre a la vista, también en móvil. En móvil cada fila se desplaza a lo
-         ancho; el botón "Filtros" abre el panel con todo desplegado en varias líneas. -->
+    <!-- Solo escritorio: ahí hay ancho de sobra para tener los chips a la vista. En móvil
+         esta fila no existe y los filtros viven únicamente en el panel, para que no aparezcan
+         dos veces ni haya dos sitios donde tocar lo mismo. -->
     <div class="rows">
       <div class="chip-block">
         <span class="chip-label">Categoría</span>
@@ -83,48 +93,61 @@
 
   </div>
 
-  <div class="scrim" id="scrim" hidden></div>
+</div>
 
-  <div class="panel" id="panel">
-    <div class="wrap">
+<div class="scrim" id="scrim" hidden></div>
 
-      <div class="panel-head">
-        <strong>Filtros</strong>
-        <button class="panel-x" id="close-filters" type="button" aria-label="Cerrar">&times;</button>
-      </div>
+<div class="panel" id="panel">
+  <div class="wrap">
 
-      <!-- Copia del mismo juego de filtros, aquí sin recortar: todo en varias líneas. -->
-      <div class="chip-block">
-        <span class="chip-label">Categoría</span>
-        <div class="chips" id="cats-p"></div>
-      </div>
-
-      <div class="chip-block" id="brand-block-p" hidden>
-        <span class="chip-label">Marca</span>
-        <div class="chips" id="brands-p"></div>
-      </div>
-
-      <div class="chip-block" id="size-block-p">
-        <span class="chip-label">Talla</span>
-        <div class="chips" id="sizes-p"></div>
-      </div>
-
-      <div class="panel-foot">
-        <button class="panel-clear" id="panel-clear" type="button">Limpiar</button>
-        <button class="panel-apply" id="panel-apply" type="button">Ver <span id="apply-n"></span></button>
-      </div>
-
+    <div class="panel-head">
+      <strong>Filtros</strong>
+      <button class="panel-x" id="close-filters" type="button" aria-label="Cerrar">&times;</button>
     </div>
+
+    <!-- Copia del mismo juego de filtros, aquí sin recortar: todo en varias líneas. -->
+    <div class="chip-block">
+      <span class="chip-label">Categoría</span>
+      <div class="chips" id="cats-p"></div>
+    </div>
+
+    <div class="chip-block" id="brand-block-p" hidden>
+      <span class="chip-label">Marca</span>
+      <div class="chips" id="brands-p"></div>
+    </div>
+
+    <div class="chip-block" id="size-block-p">
+      <span class="chip-label">Talla</span>
+      <div class="chips" id="sizes-p"></div>
+    </div>
+
+    <div class="panel-foot">
+      <button class="panel-clear" id="panel-clear" type="button">Limpiar</button>
+      <button class="panel-apply" id="panel-apply" type="button">Ver <span id="apply-n"></span></button>
+    </div>
+
   </div>
 </div>
 
-<!-- Aparece solo cuando la barra se esconde al bajar, para que no haya que adivinar que
-     subiendo vuelve. Un toque y los filtros regresan. -->
-<button class="fab" id="fab" type="button">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3zm4 6h10v2H7zm3 6h4v2h-4z"/></svg>
-  <span>Filtros</span>
-  <span class="fbadge" id="fab-badge" hidden></span>
-</button>
+<!-- Selector de bienvenida: solo la primera visita, y nunca si el enlace ya trae categoria.
+     Mientras esta abierto no se descarga ninguna foto de producto. -->
+<div class="bien-fondo" id="bienvenida" hidden>
+  <div class="bien" role="dialog" aria-modal="true" aria-labelledby="bien-titulo">
+    <div class="bien-top">
+      <img class="bien-logo" src="logo.png" alt="NEPTUS" width="495" height="96">
+      <p class="bien-hola" id="bien-hola"></p>
+    </div>
+    <div class="bien-in">
+      <h2 class="bien-titulo" id="bien-titulo">¿Qué quieres ver?</h2>
+      <div class="bien-grid" id="bien-grid"></div>
+    </div>
+    <div class="bien-foot">
+      <button class="bien-todo" id="bien-todo" type="button">
+        Ver todo el catálogo <span id="bien-total"></span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <main class="wrap">
   <p class="count" id="count" role="status" aria-live="polite"></p>
