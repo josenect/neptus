@@ -1,10 +1,17 @@
 name: Sincronizar catálogo
 
-# Se lanza a mano desde la pestaña Actions de GitHub (botón "Run workflow").
 # Lee la carpeta de Drive, descarga y convierte solo las fotos nuevas, y guarda el resultado
 # en el repositorio. Netlify detecta el push y republica el sitio solo.
+#
+# Se dispara de dos formas: a mano desde la pestaña Actions (botón "Run workflow"), para
+# publicar algo al momento, y sola cada 6 horas por si nadie se acuerda de pulsarlo.
 on:
   workflow_dispatch:
+  schedule:
+    # El cron de GitHub va en UTC: esto cae a las 01:00, 07:00, 13:00 y 19:00 hora de Colombia,
+    # cubriendo mañana, mediodía y tarde. Si no hay nada nuevo en Drive la ejecución termina en
+    # segundos sin tocar el repositorio.
+    - cron: "0 */6 * * *"
 
 # Necesario para que el workflow pueda guardar las fotos nuevas y las referencias.
 permissions:
