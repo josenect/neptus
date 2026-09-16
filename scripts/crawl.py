@@ -12,8 +12,10 @@ import os
 import re
 import urllib.request
 
-ROOT_ID = "1LLU01ZYmPlCB2qn96H59IutBrpLl1dVZ"
-ROOT_NAME = "NEPTUS STORE"
+import config   # lee el .env de la raiz, el unico sitio con los datos del negocio
+
+ROOT_ID = config.obligatorio("VITE_DRIVE_FOLDER")
+ROOT_NAME = config.obligatorio("VITE_STORE")
 MAX_DEPTH = 4
 OUT = os.path.join(os.path.dirname(__file__), "..", "data", "tree.json")
 

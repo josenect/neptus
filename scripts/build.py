@@ -6,7 +6,9 @@ JPEG que Drive genera desde cada HEIC -> fusionar duplicados por hash de conteni
 asignar referencias estables -> codificar WebP en dos tamanos.
 
 Es incremental: lo ya descargado en data/cache/ no se vuelve a bajar y las referencias ya
-asignadas en data/refs.json nunca cambian.
+asignadas en data/refs.json nunca cambian. La referencia va atada al id del archivo en Drive,
+que es permanente; el hash del contenido solo sirve para fusionar duplicados dentro de una
+pasada, porque Drive devuelve bytes distintos cada vez que regenera el JPEG.
 
 Uso:  python3 scripts/build.py [--limit N]
 """
@@ -24,6 +26,8 @@ import time
 import urllib.request
 
 from PIL import Image, ImageOps
+
+import config   # lee el .env de la raiz, el unico sitio con los datos del negocio
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TREE = os.path.join(BASE, "data", "tree.json")
@@ -172,24 +176,53 @@ def download(product, index, total):
 # --------------------------------------------------------------------------- referencias
 
 def load_refs():
-    if os.path.exists(REFS):
-        with open(REFS, encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+    """Devuelve (refs, reservadas): id de Drive -> referencia, y numeros ya gastados.
+
+    La clave es el id del archivo en Drive, que es permanente. NO se puede usar el hash del
+    contenido: Drive genera el JPEG desde el HEIC al vuelo y devuelve bytes distintos cada
+    vez (comprobado: la mitad de las fotos cambian de tamano entre dos descargas), asi que
+    con el hash media tienda se renumeraba cada vez que la cache se enfriaba.
+    """
+    if not os.path.exists(REFS):
+        return {}, set()
+    with open(REFS, encoding="utf-8") as f:
+        datos = json.load(f)
+    if datos.get("version") != 2:
+        raise SystemExit(
+            "data/refs.json tiene un formato antiguo (referencias por hash del contenido).\n"
+            "Ese formato renumera los productos y las referencias ya estan con los clientes.\n"
+            "No se continua para no reasignarlas; ver CONFIGURACION.md."
+        )
+    return datos["refs"], set(datos.get("reservadas", []))
 
 
-def make_ref(category, refs, counters):
+def save_refs(refs, reservadas):
+    with open(REFS, "w", encoding="utf-8") as f:
+        json.dump({"version": 2,
+                   "refs": dict(sorted(refs.items(), key=lambda kv: kv[1])),
+                   "reservadas": sorted(reservadas)}, f, indent=1)
+
+
+def make_ref(category, refs, reservadas, counters):
     prefix = PREFIX.get(category)
     if not prefix:
         prefix = (re.sub(r"[^A-Z]", "", category.upper()) + "XXX")[:3]
     n = counters.get(prefix, 0)
-    used = set(refs.values())
+    # Las reservadas son numeros que un dia se publicaron y luego quedaron sueltos: no se
+    # reutilizan, o un cliente pediria la foto de otro.
+    used = set(refs.values()) | reservadas
     while True:
         n += 1
         candidate = "%s-%04d" % (prefix, n)
         if candidate not in used:
             counters[prefix] = n
             return candidate
+
+
+def num_ref(ref):
+    """Orden estable de referencias: por prefijo y numero, no alfabetico."""
+    prefix, _, num = ref.rpartition("-")
+    return (prefix, int(num) if num.isdigit() else 0)
 
 
 # --------------------------------------------------------------------------- imagenes
@@ -268,7 +301,12 @@ def main():
         if first is None:
             by_hash[product["hash"]] = product
             product["also_in"] = []
+            # Todos los ids de Drive que acaban en este producto. La referencia se busca por
+            # cualquiera de ellos: si manana los bytes no coinciden y el grupo se parte, cada
+            # foto recupera la suya en vez de estrenar numero.
+            product["ids"] = [product["drive"]]
         else:
+            first["ids"].append(product["drive"])
             first["sizes"] |= product["sizes"]
             label = product["sub"] or product["cat"]
             if product["cat"] != first["cat"] and label not in first["also_in"]:
@@ -277,9 +315,9 @@ def main():
     unique = list(by_hash.values())
     print("  %d fusionados -> %d productos unicos" % (merged, len(unique)))
 
-    refs = load_refs()
+    refs, reservadas = load_refs()
     counters = {}
-    for ref in refs.values():
+    for ref in list(refs.values()) + list(reservadas):
         prefix, _, num = ref.rpartition("-")
         if num.isdigit():
             counters[prefix] = max(counters.get(prefix, 0), int(num))
@@ -287,11 +325,17 @@ def main():
     print("\nCodificando WebP...")
     entries, nuevas = [], 0
     for i, product in enumerate(unique, 1):
-        ref = refs.get(product["hash"])
-        if ref is None:
-            ref = make_ref(product["cat"], refs, counters)
-            refs[product["hash"]] = ref
+        # De todas las referencias que ya tenga el grupo se queda la mas antigua (numero mas
+        # bajo), que es la que lleva mas tiempo circulando. Las demas quedan reservadas.
+        conocidas = sorted({refs[d] for d in product["ids"] if d in refs}, key=num_ref)
+        if conocidas:
+            ref = conocidas[0]
+            reservadas.update(conocidas[1:])
+        else:
+            ref = make_ref(product["cat"], refs, reservadas, counters)
             nuevas += 1
+        for d in product["ids"]:
+            refs[d] = ref
         src = os.path.join(CACHE, product["drive"] + ".jpg")
         try:
             w, h = encode(src, ref)
@@ -313,8 +357,7 @@ def main():
             print("  %d/%d" % (i, len(unique)), flush=True)
     print("  %d referencias nuevas, %d reutilizadas" % (nuevas, len(entries) - nuevas))
 
-    with open(REFS, "w", encoding="utf-8") as f:
-        json.dump(refs, f, indent=1)
+    save_refs(refs, reservadas)
 
     categories = []
     for name in [c["name"] for c in tree["folders"]]:
@@ -334,9 +377,10 @@ def main():
                            "sizes": sizes, "thumb": portada})
 
     catalog = {
-        "store": "NEPTUS STORE",
+        # Informativos: dicen que genero este archivo. El sitio no los lee.
+        "store": config.obligatorio("VITE_STORE"),
         "generated": datetime.date.today().isoformat(),
-        "drive": "https://drive.google.com/drive/folders/" + tree["id"],
+        "drive": "https://drive.google.com/drive/folders/" + config.obligatorio("VITE_DRIVE_FOLDER"),
         "categories": categories,
         "brands": sorted({e["brand"] for e in entries if e["brand"]}),
         "sizeOrder": SIZE_ORDER,

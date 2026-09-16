@@ -7,6 +7,10 @@ Las fotos viven en la [carpeta de Drive del local](https://drive.google.com/driv
 este proyecto las lee, las convierte a un formato que sí se ve en todos los navegadores y
 genera el sitio.
 
+> **¿Buscas dónde cambiar el teléfono, el nombre o la carpeta de Drive?**
+> Están en el archivo **[`.env`](.env)** de la raíz. El mapa completo, incluidos el logo y los
+> iconos, en **[CONFIGURACION.md](CONFIGURACION.md)**.
+
 ---
 
 ## Por qué hace falta convertir las fotos
@@ -79,28 +83,30 @@ subdirectorio del tipo `usuario.github.io/neptus`.
 
 ---
 
-## Cambiar el teléfono sin tocar código (el panel de Netlify como formulario)
+## Cambiar el teléfono, el nombre o la carpeta de Drive
 
-El panel de Netlify ya es un formulario protegido por contraseña, así que sirve de panel de
-configuración sin construir nada:
+Todo está en el archivo **[`.env`](.env)** de la raíz: se edita, se confirma el cambio y se
+sube. Netlify recompila solo.
 
-1. Netlify → el sitio → **Site configuration → Environment variables**.
-2. Añadir o editar:
+| Variable | Qué cambia |
+|---|---|
+| `VITE_WHATSAPP` | Número que recibe los pedidos |
+| `VITE_STORE` | Nombre del negocio (pie, título, etiquetas al compartir) |
+| `VITE_TAGLINE` | Frase bajo el logo |
+| `VITE_DRIVE_FOLDER` | Carpeta de Google Drive con las fotos |
+| `VITE_PER_PAGE` | Productos por página |
+| `VITE_POR_CATEGORIA` | Productos seguidos de la misma categoría |
 
-   | Variable | Para qué |
-   |---|---|
-   | `VITE_WHATSAPP` | Número que recibe los pedidos |
-   | `VITE_STORE` | Nombre de la tienda |
-   | `VITE_TAGLINE` | Frase bajo el nombre |
+Ese `.env` **sí va al repositorio**: no hay secretos, todo eso se ve en la propia web.
 
-3. **Deploys → Trigger deploy → Deploy site**. En ~1 minuto está en vivo.
+### Sin acceso al repositorio
 
-El número se puede escribir como sea (`+57 311 250 7084`, `311-250-7084`): el sitio le quita
-todo lo que no sea dígito. Si estas variables no existen, se usan los valores de
-`public/config.js`, así que el sitio funciona igual sin configurar nada.
+Las mismas variables se pueden poner en **Netlify → Site configuration → Environment
+variables**, un formulario con contraseña. Lo que se ponga ahí **gana** a lo escrito en el
+`.env`, así que sirve para un cambio urgente.
 
-> Ojo: son variables de **compilación**, no de ejecución. Cambiarlas exige republicar (el
-> botón *Trigger deploy*). No basta con guardarlas.
+> Son variables de **compilación**. Después de cambiarlas hay que pulsar **Deploys → Trigger
+> deploy**; no basta con guardarlas.
 
 ---
 
@@ -134,38 +140,37 @@ segunda sincronización y las siguientes tardan segundos en vez de media hora.
 
 ## Cambiar datos del negocio
 
-Todo lo editable está en **`public/config.js`**, comentado:
+Todo lo configurable está listado en **[CONFIGURACION.md](CONFIGURACION.md)**: teléfono,
+nombre, frase, logo e iconos, carpeta de Drive, productos por página y los ajustes del
+pipeline de imágenes, cada uno con el archivo exacto donde se toca.
 
-| Ajuste | Qué hace |
+Resumen de dónde vive cada cosa:
+
+| Qué | Dónde |
 |---|---|
-| `WHATSAPP` | Número que recibe los pedidos. Indicativo + número, sin `+` ni espacios. |
-| `STORE` | Nombre que sale en la cabecera y en el pie. |
-| `TAGLINE` | Frase pequeña bajo el nombre. |
-| `PER_PAGE` | Productos por página (48 por defecto). |
-| `MSG` | Texto que se escribe solo en WhatsApp al pedir. |
+| Teléfono, nombre, frase, carpeta de Drive, paginación | `.env` |
+| Logo e iconos | `public/logo.png`, `public/icon-180.png`, `public/icon-512.png` |
+| Texto del mensaje de WhatsApp | `src/app.js`, función `MSG` |
+| Tamaños y calidad de las fotos | `scripts/build.py`, cabecera del archivo |
 
-Cambiar el número de WhatsApp es editar una línea. Ese archivo vive en `public/`, así que
-Vite lo copia **sin empaquetar**: también se puede editar directamente en `dist/config.js`
-después de compilar, sin volver a construir nada.
-
-Si el sitio está en Netlify, lo normal es no tocar este archivo y usar las variables de
-entorno (ver arriba), que no requieren acceso al código.
+Todas las variables se pueden sobrescribir desde el panel de Netlify, sin acceso al
+repositorio (ver arriba).
 
 ---
 
 ## Estructura
 
 ```
+.env                 Datos del negocio: telefono, nombre, carpeta de Drive
+CONFIGURACION.md     Dónde se cambia cada cosa (empieza por aquí)
 index.html           Página (entrada de Vite)
 src/app.js           Filtros, paginación, buscador y lightbox
 src/styles.css       Estilos (móvil primero)
-public/config.js     Ajustes del negocio; se copia sin empaquetar
 public/catalog.json  Catálogo generado
 public/img/          Fotos ya optimizadas (WebP, dos tamaños)
 public/_headers      Cabeceras de caché para Cloudflare/Netlify
 vite.config.js       Puerto 8080, salida dist/, rutas relativas
 netlify.toml         Build command y carpeta de publicación para Netlify
-.env.example         Variables de entorno disponibles
 
 scripts/crawl.py     Lee la carpeta de Drive        -> data/tree.json
 scripts/build.py     Descarga, agrupa y convierte   -> public/catalog.json + public/img/**
@@ -183,7 +188,9 @@ dist/                Resultado de npm run build: esto es lo que se publica
 2. Los archivos con el mismo nombre dentro de una misma categoría son **el mismo producto en
    distintas tallas** (verificado: son la misma imagen byte a byte).
 3. Después se comparan las fotos por contenido (hash MD5) para fusionar las que se subieron
-   dos veces con nombres distintos o que están repetidas en dos categorías.
+   dos veces con nombres distintos o que están repetidas en dos categorías. El hash sirve
+   **solo para fusionar**: la referencia va atada al id del archivo en Drive, porque Drive
+   regenera el JPEG desde el HEIC y devuelve bytes distintos en cada descarga.
 
 ### Ajustar el peso de las imágenes
 

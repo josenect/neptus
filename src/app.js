@@ -7,20 +7,40 @@ import "./styles.css";
 (function () {
   "use strict";
 
-  var CFG = window.CONFIG;
+  /* Toda la configuracion sale del .env de la raiz, que Vite inyecta al compilar. Es el
+     unico sitio con datos del negocio, y las variables del panel de Netlify lo pisan sin
+     tocar el repositorio. Ver CONFIGURACION.md. */
+  var env = import.meta.env;
 
-  /* Variables de entorno de Netlify. Si estan definidas en el panel de Netlify mandan sobre
-     public/config.js, asi el dueno cambia el telefono desde alli (que ya pide contrasena)
-     sin tocar codigo: cambiar la variable y darle a "Trigger deploy". Si no existen, se
-     siguen usando los valores de config.js. */
-  var ENV = {
-    WHATSAPP: import.meta.env.VITE_WHATSAPP,
-    STORE: import.meta.env.VITE_STORE,
-    TAGLINE: import.meta.env.VITE_TAGLINE
+  function texto(v, siFalta) {
+    return v != null && String(v) !== "" ? String(v) : siFalta;
+  }
+
+  function numero(v, siFalta) {
+    var n = parseInt(v, 10);
+    return isNaN(n) || n < 1 ? siFalta : n;
+  }
+
+  var CFG = {
+    // Se limpia aqui para que el .env admita "+57 311 250 7084" o "311-250-7084".
+    WHATSAPP: texto(env.VITE_WHATSAPP, "").replace(/\D/g, ""),
+    STORE: texto(env.VITE_STORE, "Catálogo"),
+    TAGLINE: texto(env.VITE_TAGLINE, ""),
+    PER_PAGE: numero(env.VITE_PER_PAGE, 48),
+    POR_CATEGORIA: numero(env.VITE_POR_CATEGORIA, 2),
+
+    // Mensaje que se escribe solo al pulsar "Pedir por WhatsApp". El enlace apunta a la foto
+    // del producto: el dueno lo toca y la ve, sin buscarla entre mas de mil referencias.
+    MSG: function (producto, talla, enlace) {
+      var lineas = ["Hola! Me interesa este producto del catalogo:", ""];
+      lineas.push("Referencia: " + producto.ref);
+      lineas.push("Categoria: " + producto.cat + (producto.sub ? " / " + producto.sub : ""));
+      if (talla) lineas.push("Talla: " + talla);
+      if (enlace) lineas.push("", enlace);
+      lineas.push("", "Sigue disponible?");
+      return lineas.join("\n");
+    }
   };
-  if (ENV.WHATSAPP) CFG.WHATSAPP = String(ENV.WHATSAPP).replace(/\D/g, "");
-  if (ENV.STORE) CFG.STORE = String(ENV.STORE);
-  if (ENV.TAGLINE) CFG.TAGLINE = String(ENV.TAGLINE);
 
   var $ = function (id) { return document.getElementById(id); };
 
