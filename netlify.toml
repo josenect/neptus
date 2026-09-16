@@ -11,7 +11,8 @@
   NODE_VERSION = "20"
 
 # Variables que se pueden definir en Netlify (Site configuration > Environment variables).
-# Si no se definen, se usan los valores de public/config.js.
+# Lo que se ponga aqui gana a lo escrito en el .env de la raiz, que es donde estan por
+# defecto. Son variables de compilacion: despues de cambiarlas hay que relanzar el deploy.
 #   VITE_WHATSAPP  numero que recibe los pedidos, indicativo + numero, sin + ni espacios
 #   VITE_STORE     nombre de la tienda
 #   VITE_TAGLINE   frase bajo el nombre
