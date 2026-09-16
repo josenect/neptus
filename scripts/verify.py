@@ -6,6 +6,7 @@ que no haya referencias repetidas y que el peso quepa en los limites de Cloudfla
 Sale con codigo 1 si algo falla.
 """
 
+import collections
 import json
 import os
 import sys
@@ -29,6 +30,17 @@ def main():
     repetidas = {r for r in refs if refs.count(r) > 1}
     if repetidas:
         problemas.append("referencias repetidas: %s" % sorted(repetidas)[:10])
+
+    # Cada archivo de Drive tiene que tener SU referencia. Si dos la comparten no se nota
+    # hasta que la fusion de duplicados se deshace (los bytes de Drive cambian solos) y ese
+    # dia salen dos productos con el mismo numero.
+    with open(os.path.join(BASE, "data", "refs.json"), encoding="utf-8") as f:
+        guardadas = json.load(f)["refs"]
+    compartidas = collections.Counter(guardadas.values())
+    compartidas = sorted(r for r, n in compartidas.items() if n > 1)
+    if compartidas:
+        problemas.append("en refs.json hay referencias asignadas a varios archivos de "
+                         "Drive: %s" % compartidas[:10])
 
     esperadas = set(refs)
     for carpeta in ("grid", "full"):

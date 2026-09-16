@@ -325,17 +325,16 @@ def main():
     print("\nCodificando WebP...")
     entries, nuevas = [], 0
     for i, product in enumerate(unique, 1):
-        # De todas las referencias que ya tenga el grupo se queda la mas antigua (numero mas
-        # bajo), que es la que lleva mas tiempo circulando. Las demas quedan reservadas.
-        conocidas = sorted({refs[d] for d in product["ids"] if d in refs}, key=num_ref)
-        if conocidas:
-            ref = conocidas[0]
-            reservadas.update(conocidas[1:])
-        else:
-            ref = make_ref(product["cat"], refs, reservadas, counters)
-            nuevas += 1
+        # Cada archivo de Drive tiene SU referencia, y no se la cede a nadie: la fusion de
+        # duplicados depende de los bytes, que Drive cambia entre descargas, asi que un grupo
+        # puede partirse manana. Si dos ids compartieran numero, al partirse saldria repetido.
         for d in product["ids"]:
-            refs[d] = ref
+            if d not in refs:
+                refs[d] = make_ref(product["cat"], refs, reservadas, counters)
+                nuevas += 1
+        # El producto fusionado se muestra con la mas antigua del grupo, que es la que lleva
+        # mas tiempo circulando entre los clientes.
+        ref = min((refs[d] for d in product["ids"]), key=num_ref)
         src = os.path.join(CACHE, product["drive"] + ".jpg")
         try:
             w, h = encode(src, ref)
@@ -355,7 +354,8 @@ def main():
         })
         if i % 100 == 0:
             print("  %d/%d" % (i, len(unique)), flush=True)
-    print("  %d referencias nuevas, %d reutilizadas" % (nuevas, len(entries) - nuevas))
+    print("  %d referencias nuevas, %d productos con referencia ya conocida"
+          % (nuevas, len(entries) - nuevas))
 
     save_refs(refs, reservadas)
 
