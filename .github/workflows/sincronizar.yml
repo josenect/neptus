@@ -11,7 +11,7 @@ on:
     # El cron de GitHub va en UTC: esto cae a las 01:00, 07:00, 13:00 y 19:00 hora de Colombia,
     # cubriendo mañana, mediodía y tarde. Si no hay nada nuevo en Drive la ejecución termina en
     # segundos sin tocar el repositorio.
-    - cron: "0 */6 * * *"
+    - cron: "0 */12 * * *"
 
 # Necesario para que el workflow pueda guardar las fotos nuevas y las referencias.
 permissions:

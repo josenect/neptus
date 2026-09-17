@@ -29,6 +29,14 @@ import "./styles.css";
     PER_PAGE: numero(env.VITE_PER_PAGE, 48),
     POR_CATEGORIA: numero(env.VITE_POR_CATEGORIA, 2),
 
+    // Enlaces de la cabecera. Vacio significa que ese icono no se pinta: asi el catalogo
+    // sirve para una tienda sin TikTok, o sin local fisico, sin tocar una linea de codigo.
+    MAPS: texto(env.VITE_MAPS, ""),
+    MAPS_LABEL: texto(env.VITE_MAPS_LABEL, ""),
+    INSTAGRAM: texto(env.VITE_INSTAGRAM, ""),
+    TIKTOK: texto(env.VITE_TIKTOK, ""),
+    FACEBOOK: texto(env.VITE_FACEBOOK, ""),
+
     // Mensaje que se escribe solo al pulsar "Pedir por WhatsApp". El enlace apunta a la foto
     // del producto: el dueno lo toca y la ve, sin buscarla entre mas de mil referencias.
     MSG: function (producto, talla, enlace) {
@@ -64,6 +72,15 @@ import "./styles.css";
   function waLink(product, size) {
     return "https://wa.me/" + CFG.WHATSAPP + "?text=" +
       encodeURIComponent(CFG.MSG(product, size, fotoProducto(product)));
+  }
+
+  /* Enlaces que salen del .env (redes, ubicacion, WhatsApp). Nacen ocultos en el HTML: sin
+     direccion no se pintan, en vez de ofrecer un icono que no lleva a ninguna parte. */
+  function enlace(id, url) {
+    if (!url) return;
+    var a = $(id);
+    a.href = url;
+    a.hidden = false;
   }
 
   function readURL() {
@@ -255,13 +272,12 @@ import "./styles.css";
   function renderChips() {
     pintar(["cats", "cats-p"], function (box) {
       box.appendChild(chip("Todo", DATA.products.length, !state.cat, function () {
-        state.cat = ""; state.brand = ""; state.page = 1; commit();
+        irACategoria("");
+        commit();
       }));
       DATA.categories.forEach(function (c) {
         box.appendChild(chip(c.name, c.count, state.cat === c.name, function () {
-          state.cat = state.cat === c.name ? "" : c.name;
-          state.brand = "";
-          state.page = 1;
+          irACategoria(state.cat === c.name ? "" : c.name);
           commit();
         }));
       });
@@ -309,11 +325,29 @@ import "./styles.css";
     renderPills();
   }
 
+  /* Cambiar de categoria limpia TODO lo demas. Las tallas y las marcas son de cada categoria:
+     la XL de CAMISAS no tiene nada que ver con la de GORRAS, y arrastrarla al cambiar dejaba
+     la tienda medio vacia sin que se viera por que. El buscador tambien se vacia porque manda
+     sobre los filtros (ver filtrar()): si no, elegir categoria no se notaria. */
+  function irACategoria(nombre) {
+    state.cat = nombre || "";
+    state.brand = "";
+    state.size = "";
+    state.q = "";
+    if ($("q")) $("q").value = "";
+    state.page = 1;
+  }
+
   /* Filtros activos como pastillas quitables: en movil los chips viven dentro del panel,
      asi que sin esto no habria forma de ver que hay filtrado sin abrirlo. */
   function activeFilters() {
     var out = [];
-    if (state.cat) out.push({ label: state.cat, clear: function () { state.cat = ""; state.brand = ""; } });
+    /* Quitar la categoria se lleva su marca y su talla, que solo tenian sentido dentro. La
+       busqueda no: tiene su propia pastilla al lado y quitar una no debe borrar la otra. */
+    if (state.cat) out.push({
+      label: state.cat,
+      clear: function () { state.cat = ""; state.brand = ""; state.size = ""; }
+    });
     if (state.brand) out.push({ label: state.brand, clear: function () { state.brand = ""; } });
     if (state.size) out.push({ label: "Talla " + state.size, clear: function () { state.size = ""; } });
     if (state.q) out.push({ label: '"' + state.q + '"', clear: function () { state.q = ""; $("q").value = ""; } });
@@ -757,18 +791,11 @@ import "./styles.css";
     $("bienvenida").hidden = true;
     document.body.classList.remove("arrancando");
     document.body.style.overflow = "";
-    /* Sin categoria significa "ver todo el catalogo", asi que se limpian los filtros. Antes
-       solo se aplicaba la categoria cuando venia una: en el arranque daba igual porque no
-       habia nada puesto, pero abriendo el selector desde la cabecera estando en CAMISAS el
-       boton no hacia absolutamente nada pese a lo que promete su texto. */
-    state.cat = categoria || "";
-    if (!categoria) {
-      state.brand = "";
-      state.size = "";
-      state.q = "";
-      $("q").value = "";
-    }
-    state.page = 1;
+    /* Elegir aqui es empezar de cero, se pida una categoria o "ver todo el catalogo": se
+       limpia lo demas. Antes solo se aplicaba la categoria cuando venia una y, abriendo el
+       selector desde la cabecera estando en CAMISAS, "ver todo" no hacia absolutamente nada
+       pese a lo que promete su texto. */
+    irACategoria(categoria);
     commit();
     cargarVisibles();   // ahora si: a pedir las fotos que se vean
   }
@@ -914,8 +941,18 @@ import "./styles.css";
       document.title = CFG.STORE + " · Catálogo";
       $("foot-store").textContent = CFG.STORE;
       $("tagline").textContent = CFG.TAGLINE;
-      $("wa-header").href = "https://wa.me/" + CFG.WHATSAPP + "?text=" +
-        encodeURIComponent("Hola! Vengo del catalogo de " + CFG.STORE + ".");
+      enlace("wa-flot", CFG.WHATSAPP && "https://wa.me/" + CFG.WHATSAPP + "?text=" +
+        encodeURIComponent("Hola! Vengo del catalogo de " + CFG.STORE + "."));
+      enlace("red-maps", CFG.MAPS);
+      // La ciudad al lado del pin: es lo que lo distingue de las redes de al lado.
+      if (CFG.MAPS_LABEL) {
+        $("maps-label").textContent = CFG.MAPS_LABEL;
+        $("maps-label").hidden = false;
+      }
+      // En el mismo orden en que salen en la cabecera.
+      enlace("red-fb", CFG.FACEBOOK);
+      enlace("red-ig", CFG.INSTAGRAM);
+      enlace("red-tiktok", CFG.TIKTOK);
       $("foot-meta").textContent =
         DATA.products.length.toLocaleString("es-CO") + " productos · " +
         DATA.categories.length + " categorías · actualizado " + DATA.generated;

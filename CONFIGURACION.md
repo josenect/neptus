@@ -15,6 +15,11 @@ partes: la web, el crawler de Drive y el generador del catálogo.
 | Nombre del negocio | `VITE_STORE` |
 | Frase bajo el logo | `VITE_TAGLINE` |
 | **Carpeta de Google Drive** | `VITE_DRIVE_FOLDER` |
+| Enlace al local en Google Maps | `VITE_MAPS` |
+| Ciudad que se lee junto al pin | `VITE_MAPS_LABEL` |
+| Perfil de Instagram | `VITE_INSTAGRAM` |
+| Perfil de TikTok | `VITE_TIKTOK` |
+| Página de Facebook | `VITE_FACEBOOK` |
 | Productos por página | `VITE_PER_PAGE` |
 | Productos seguidos de la misma categoría | `VITE_POR_CATEGORIA` |
 
@@ -23,6 +28,10 @@ recompila solo y en un par de minutos está en vivo.
 
 El teléfono se puede escribir como sea (`+57 311 250 7084`, `311-250-7084`): la web le quita
 todo lo que no sea dígito.
+
+**Los tres enlaces de la cabecera se apagan solos**: si se deja una de esas variables vacía,
+su icono no aparece. Así se quita TikTok, o la ubicación, sin tocar el código. Lo mismo vale
+para `VITE_WHATSAPP`: sin número no se pinta el botón flotante.
 
 > Este `.env` **sí va al repositorio**, al contrario de lo habitual: no hay ningún secreto,
 > todo esto se ve en la propia web. Está anotado en `.gitignore` para que nadie lo excluya

@@ -11,7 +11,10 @@
   --wa: #22a45d;
   --radius: 12px;
   --gap: 12px;
-  --top-h: 56px;
+  /* Alto de la cabecera. No es decorativo: de el cuelgan la barra de filtros pegajosa
+     (top: var(--top-h)) y la pestana, asi que al cambiarlo se recolocan solas. En movil son
+     dos filas -- Catalogo y debajo las redes -- y por eso pasa de 56px a 74px. */
+  --top-h: 74px;
 }
 
 * { box-sizing: border-box; }
@@ -90,6 +93,9 @@ button { font: inherit; color: inherit; }
   z-index: 30;
 }
 
+/* Dos columnas: a la izquierda la marca, a la derecha Catalogo con las redes debajo. La frase
+   convive con los iconos LADO A LADO, nunca por encima: cuando no cabe se parte en lineas
+   hacia abajo dentro de su columna (ver .brand small). */
 .top-in {
   height: var(--top-h);
   display: flex;
@@ -118,6 +124,9 @@ button { font: inherit; color: inherit; }
   object-position: left center;
 }
 
+/* La frase vive en su columna, al lado de los iconos y nunca por encima. En una sola linea:
+   cuando no cabe se corta con puntos suspensivos, que mantiene la cabecera a una altura fija
+   -- y esa altura importa, porque --top-h la usan la barra de filtros pegajosa y la pestana. */
 .brand small {
   font-size: 11px;
   color: #a8adb9;
@@ -126,40 +135,74 @@ button { font: inherit; color: inherit; }
   text-overflow: ellipsis;
 }
 
-/* Grupo de acciones de la derecha de la cabecera. */
-.top-acciones { display: flex; align-items: center; gap: 8px; flex: none; }
+/* Columna de la derecha: Catalogo y, debajo, las redes. En escritorio vuelven a la misma fila
+   (ver el bloque de min-width: 700px). */
+.top-acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex: none;
+}
 
-/* Abre el selector de categorias. De contorno y no macizo: la accion principal de la cabecera
-   es WhatsApp, y dos botones rellenos competirian entre si. */
+/* Abre el selector de categorias: es la puerta a las 18 y conviene que se vea que ahi esta
+   todo. Macizo y en blanco: de contorno pasaba por decoracion, y sobre el negro de la cabecera
+   el blanco es lo que mas resalta, mas que cualquier color. La marca es blanco y negro. */
 .cat-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex: none;
-  background: transparent;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, .28);
+  background: #fff;
+  color: var(--dark);
+  border: 1px solid transparent;
   border-radius: 999px;
-  padding: 7px 13px;
-  font-size: 13px;
+  /* Ajustado, no grueso: macizo en blanco ya pesa bastante y con el relleno de antes se comia
+     la cabecera. */
+  padding: 5px 12px;
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
-.cat-btn svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
-.cat-btn:active { background: rgba(255, 255, 255, .1); }
+.cat-btn svg { width: 14px; height: 14px; fill: currentColor; flex: none; }
+.cat-btn:active { filter: brightness(.92); }
 
-/* En pantallas estrechas los tres elementos no caben con texto. El que pierde la palabra es
-   WhatsApp y no este: el logo verde se reconoce solo, y ademas dentro de cada producto hay un
-   boton grande que dice "Pedir por WhatsApp". "Catálogo" en cambio no se adivina desde un
-   icono de cuadricula. */
-@media (max-width: 379px) {
-  /* Acotado a la cabecera: el boton grande de dentro del producto usa la misma clase
-     (.wa-btn .wa-big) y se quedaba tambien sin su texto "Pedir por WhatsApp", que ahi es
-     justo lo que hay que leer. */
-  .top .wa-btn { padding: 8px; }
-  .top .wa-btn span { display: none; }
+/* Ubicacion y redes. Iconos sueltos, sin fondo ni borde: son accesos secundarios y con
+   pastilla propia le quitarian el sitio a Catalogo.
+   Blancos y no con el color de cada marca: tres logos a todo color (rosa, cian, rojo) se
+   pelean entre si y con el dorado de la marca. En blanco se leen como un grupo, que es lo
+   que son, y la forma de cada uno ya se reconoce sin color. */
+.redes { display: flex; align-items: center; gap: 14px; }
+.redes a {
+  display: inline-flex;
+  color: #fff;
+  text-decoration: none;
+  /* Area tocable holgada: el dibujo mide 23 pero el objetivo del dedo es de 27. */
+  padding: 2px;
+  transition: opacity .15s ease;
 }
+.redes a svg { width: 23px; height: 23px; fill: currentColor; display: block; }
+.redes a:hover, .redes a:focus-visible { opacity: .75; }
+
+/* La tienda fisica no es una red social, y un pin suelto entre Instagram y TikTok se lee como
+   si lo fuera. Se distingue de dos maneras: lleva la ciudad escrita al lado y queda separado
+   del par de iconos por una linea. */
+.red-lugar { align-items: center; gap: 5px; }
+.red-lugar span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.redes-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, .26);
+  flex: none;
+}
+/* Sin enlace al local no hay nada que separar: la linea se iria sola al borde. */
+#red-maps[hidden] + .redes-sep { display: none; }
 
 .wa-btn {
   display: inline-flex; align-items: center; gap: 7px;
@@ -197,8 +240,37 @@ button { font: inherit; color: inherit; }
   .filters.oculto { transform: translateY(calc(-100% - 1px)); }
 }
 
+/* WhatsApp, fijo a la derecha y a media altura. Estaba en la cabecera, que en movil se recoge
+   al bajar: justo cuando el cliente ha visto algo que le gusta, el boton para preguntar ya no
+   estaba. Aqui no se mueve nunca.
+   El centro vertical lo deja lejos de los otros dos flotantes: Volver arriba esta abajo a la
+   izquierda y la pestana de filtros arriba al centro. */
+.wa-flot {
+  position: fixed;
+  right: calc(14px + env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--wa);
+  color: #fff;
+  /* Aro blanco, como en Volver arriba: el verde sobre una foto oscura se difumina. */
+  box-shadow: 0 0 0 2px #fff, 0 4px 16px rgba(10, 12, 16, .34);
+  transition: opacity .25s ease;
+}
+.wa-flot svg { width: 27px; height: 27px; fill: currentColor; }
+.wa-flot:active { filter: brightness(.92); }
+
+/* Con el panel de filtros abierto, o durante la entrada, no pinta nada. */
+body.panel-abierto .wa-flot,
+.arrancando .wa-flot { opacity: 0; pointer-events: none; }
+
 /* Volver arriba. Aparece cuando ya se ha bajado lo suficiente como para que rebobinar a
-   mano canse. Abajo a la izquierda: la esquina derecha la ocupa el distintivo de Netlify. */
+   mano canse. Abajo a la izquierda, lejos del boton de WhatsApp que ocupa la derecha. */
 .subir {
   position: fixed;
   left: 16px;
@@ -865,6 +937,12 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   :root { --gap: 16px; --top-h: 62px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   .logo { height: 24px; }
+
+  /* Aqui hay ancho de sobra: Catalogo y las redes vuelven a la misma fila y la cabecera
+     recupera su alto de una linea. */
+  .top-in { display: flex; justify-content: space-between; gap: 12px; }
+  .top-acciones { display: flex; align-items: center; gap: 16px; flex: none; }
+  .redes { grid-column: auto; }
   .card-cat { font-size: 13px; }
 
   /* En escritorio sobra el panel entero: las filas de la barra ya muestran todo. */

@@ -16,4 +16,9 @@
 #   VITE_WHATSAPP  numero que recibe los pedidos, indicativo + numero, sin + ni espacios
 #   VITE_STORE     nombre de la tienda
 #   VITE_TAGLINE   frase bajo el nombre
+#   VITE_MAPS      enlace al local en Google Maps (vacio = sin icono)
+#   VITE_MAPS_LABEL ciudad junto al pin (vacio = solo el icono)
+#   VITE_INSTAGRAM perfil de Instagram (vacio = sin icono)
+#   VITE_TIKTOK    perfil de TikTok (vacio = sin icono)
+#   VITE_FACEBOOK  pagina de Facebook (vacio = sin icono)
 #   VITE_SITE_URL  se rellena sola desde $URL; solo hace falta tocarla con dominio propio
