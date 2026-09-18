@@ -103,42 +103,92 @@ def size_key(s):
     return (SIZE_ORDER.index(s), "") if s in SIZE_ORDER else (len(SIZE_ORDER), s)
 
 
+# --------------------------------------------------------- nombres que declaran su papel
+#
+# Todo lo de aqui abajo es OPCIONAL. El catalogo sigue adivinando igual que siempre: primer
+# nivel = categoria, 'JEANS DIESEL' = marca DIESEL, lo demas = subcarpeta. Estos nombres solo
+# sirven para decir a mano lo que adivinar no acierta -- una marca que el codigo no conoce, o
+# un orden de categorias distinto del alfabetico -- y conviven carpeta a carpeta con el resto.
+
+NUMERO_AL_INICIO = re.compile(r"^\s*(\d+)\s+(.+)$")
+
+
+def orden_categoria(nombre):
+    """'1 GORRAS' -> (1, 'GORRAS'). Sin numero -> al final, por orden alfabetico.
+
+    El numero no llega a la web: la categoria se sigue llamando GORRAS, que es lo que va en
+    los enlaces que ya circulan (?cat=GORRAS) y la clave de PREFIX.
+    """
+    m = NUMERO_AL_INICIO.match(nombre)
+    if m:
+        return int(m.group(1)), m.group(2).strip()
+    return None, nombre.strip()
+
+
+def declara(segmento, palabra):
+    """'MARCA Diesel' con palabra='MARCA' -> 'Diesel'. Si no la declara, None.
+
+    Solo la palabra completa. 'M Diesel' no vale a proposito: una carpeta real llamada
+    'T SHIRTS' se leeria como la talla SHIRTS.
+    """
+    partes = segmento.split(None, 1)
+    if len(partes) == 2 and partes[0].upper() == palabra:
+        return partes[1].strip()
+    return None
+
+
 def collect_products(tree):
     """Agrupa los archivos en productos. La misma foto en varias carpetas TALLA es un producto.
 
     Devuelve (productos, tallas_desconocidas). Las tallas que no estan en SIZE_ORDER se
     conservan igualmente: se avisa por pantalla en vez de tirarlas en silencio.
     """
-    products = {}  # (familia, filename, repeticion) -> dict
+    products = {}  # (categoria, subcarpetas, marca, filename, repeticion) -> dict
     desconocidas = {}
     for path, node in leaves(tree, []):
-        if path and path[-1].upper().startswith("TALLA"):
-            family, size = path[:-1], parse_size(path[-1])
-            if size and size not in SIZE_ORDER:
-                desconocidas.setdefault(size, set()).add(" / ".join(path[:-1]))
-        else:
-            family, size = path, None
-        if not family:
+        if not path:
             continue
-        category = family[0]
-        sub = family[1] if len(family) > 1 else None
+        # El primer nivel siempre es la categoria; el numero de delante, si lo trae, solo dice
+        # en que puesto va y no forma parte del nombre.
+        category = orden_categoria(path[0])[1]
+        size, marca, subs = None, None, []
+        for seg in path[1:]:
+            if seg.upper().startswith("TALLA"):
+                # parse_size devuelve None si la carpeta se llama 'TALLA' a secas.
+                talla = parse_size(seg)
+                if talla:
+                    size = talla
+                    if size not in SIZE_ORDER:
+                        desconocidas.setdefault(size, set()).add(" / ".join(path))
+                continue
+            declarada = declara(seg, "MARCA")
+            if declarada:
+                marca = declarada.upper()
+                continue
+            subs.append(seg)
+        sub = subs[0] if subs else None
+        # Sin carpeta MARCA se sigue adivinando la marca del nombre de la subcarpeta, como
+        # siempre: 'JEANS DIESEL' no deja de funcionar porque exista otra forma de decirlo.
+        brand = marca or brand_of(sub)
         # Drive admite dos archivos DISTINTOS con el mismo nombre en una misma carpeta, asi que
         # el nombre no basta como clave: se numera cada repeticion dentro de su propia carpeta.
         # La n-esima copia de un nombre se empareja con la n-esima de las demas carpetas TALLA;
         # si el emparejamiento no fuera el correcto, la fusion por hash posterior lo arregla.
+        # La talla queda FUERA de la clave (la misma foto en TALLA M y TALLA L es un producto
+        # con dos tallas) y la marca DENTRO, para no fusionar dos marcas distintas.
         repetido = {}
         for f in node["files"]:
             n = repetido[f["name"]] = repetido.get(f["name"], 0) + 1
-            key = (tuple(family), f["name"], n)
+            key = (category, tuple(subs), brand, f["name"], n)
             p = products.get(key)
             if p is None:
                 p = products[key] = {
-                    "cat": category, "sub": sub, "brand": brand_of(sub),
+                    "cat": category, "sub": sub, "brand": brand,
                     "file": f["name"], "drive": f["id"], "sizes": set(),
                 }
             if size:
                 p["sizes"].add(size)
-    ordered = sorted(products.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2]))
+    ordered = sorted(products.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][3], kv[0][4]))
     return [p for _, p in ordered], desconocidas
 
 
@@ -196,6 +246,11 @@ def load_refs():
     return datos["refs"], set(datos.get("reservadas", []))
 
 
+def serializar(catalogo):
+    """El texto exacto de catalog.json. Compacto, y siempre igual para los mismos datos."""
+    return json.dumps(catalogo, ensure_ascii=False, separators=(",", ":"))
+
+
 def save_refs(refs, reservadas):
     with open(REFS, "w", encoding="utf-8") as f:
         json.dump({"version": 2,
@@ -204,6 +259,9 @@ def save_refs(refs, reservadas):
 
 
 def make_ref(category, refs, reservadas, counters):
+    # La clave es el nombre SIN el numero de orden, que es como llega desde collect_products.
+    # Importa: con el numero dentro, renombrar 'CAMISETA 270gr' a '6 CAMISETA 270gr' tiraria
+    # el prefijo C27 y lo cambiaria por CAM, que ya es de CAMISAS 1.1.
     prefix = PREFIX.get(category)
     if not prefix:
         prefix = (re.sub(r"[^A-Z]", "", category.upper()) + "XXX")[:3]
@@ -359,8 +417,15 @@ def main():
 
     save_refs(refs, reservadas)
 
+    # Orden del catalogo: primero las carpetas numeradas ('1 GORRAS') por su numero, y detras
+    # el resto alfabeticamente, como venian de Drive. El numero se compara como numero y no
+    # como texto, o la 10 se colaria entre la 1 y la 2. Este orden es el unico: de aqui salen
+    # los chips, el selector de bienvenida y el intercalado de "ver todo el catalogo".
     categories = []
-    for name in [c["name"] for c in tree["folders"]]:
+    ordenadas = sorted(
+        (orden_categoria(c["name"]) for c in tree["folders"]),
+        key=lambda o: (0, o[0], "") if o[0] is not None else (1, 0, o[1].upper()))
+    for _, name in ordenadas:
         items = [e for e in entries if e["cat"] == name]
         if not items:
             continue
@@ -377,17 +442,38 @@ def main():
                            "sizes": sizes, "thumb": portada})
 
     catalog = {
-        # Informativos: dicen que genero este archivo. El sitio no los lee.
+        # store y drive son informativos: dicen que genero este archivo y el sitio no los lee.
         "store": config.obligatorio("VITE_STORE"),
-        "generated": datetime.date.today().isoformat(),
+        # generated SI se ve: es el "actualizado ..." del pie. Se rellena abajo.
+        "generated": None,
         "drive": "https://drive.google.com/drive/folders/" + config.obligatorio("VITE_DRIVE_FOLDER"),
         "categories": categories,
         "brands": sorted({e["brand"] for e in entries if e["brand"]}),
         "sizeOrder": SIZE_ORDER,
         "products": entries,
     }
-    with open(os.path.join(SITE, "catalog.json"), "w", encoding="utf-8") as f:
-        json.dump(catalog, f, ensure_ascii=False, separators=(",", ":"))
+
+    # La fecha es la del ultimo cambio REAL del catalogo, no la de la ultima ejecucion. Con la
+    # fecha de hoy en cada pasada el archivo nunca salia igual al de ayer: el workflow veia un
+    # cambio aunque Drive no lo tuviera, y cada ejecucion programada acababa en commit y en un
+    # despliegue de Netlify, que se cobra. Se monta el catalogo con la fecha anterior y se
+    # comparan los bytes, que es exactamente lo que mira git: si coinciden, nada cambio.
+    ruta = os.path.join(SITE, "catalog.json")
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            previo = f.read()
+        fecha_previa = json.loads(previo).get("generated")
+    except (OSError, ValueError):
+        previo = fecha_previa = None      # primera vez, o archivo roto: fecha de hoy
+    catalog["generated"] = fecha_previa
+    if fecha_previa is None or serializar(catalog) != previo:
+        catalog["generated"] = datetime.date.today().isoformat()
+    else:
+        print("\nCatalogo sin cambios: se conserva la fecha %s" % fecha_previa)
+
+    # Misma funcion para comparar y para escribir: asi no pueden salir bytes distintos.
+    with open(ruta, "w", encoding="utf-8") as f:
+        f.write(serializar(catalog))
 
     # public/img lo genera este script: si una foto se borro de Drive, su .webp sobra.
     # Sin esta limpieza quedaria huerfano, verify.py fallaria y tumbaria la sincronizacion

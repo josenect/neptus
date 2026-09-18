@@ -8,10 +8,10 @@ name: Sincronizar catálogo
 on:
   workflow_dispatch:
   schedule:
-    # El cron de GitHub va en UTC: esto cae a las 01:00, 07:00, 13:00 y 19:00 hora de Colombia,
-    # cubriendo mañana, mediodía y tarde. Si no hay nada nuevo en Drive la ejecución termina en
-    # segundos sin tocar el repositorio.
-    - cron: "0 */12 * * *"
+    # El cron de GitHub va en UTC: cada 12 horas cae a las 07:00 y 19:00 hora de Colombia. Si
+    # no hay nada nuevo en Drive la ejecución termina sin commit y Netlify no despliega: el
+    # catálogo solo cambia su fecha cuando cambió algo más (ver scripts/build.py).
+    - cron: "0 */24 * * *"
 
 # Necesario para que el workflow pueda guardar las fotos nuevas y las referencias.
 permissions:
