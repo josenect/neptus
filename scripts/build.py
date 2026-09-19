@@ -381,15 +381,19 @@ def main():
             counters[prefix] = max(counters.get(prefix, 0), int(num))
 
     print("\nCodificando WebP...")
-    entries, nuevas = [], 0
+    # Se cuentan por separado referencias y productos: con duplicados fusionados un producto
+    # reune varios archivos, y cada archivo tiene su propia referencia.
+    entries, nuevas, conocidos = [], 0, 0
     for i, product in enumerate(unique, 1):
         # Cada archivo de Drive tiene SU referencia, y no se la cede a nadie: la fusion de
         # duplicados depende de los bytes, que Drive cambia entre descargas, asi que un grupo
         # puede partirse manana. Si dos ids compartieran numero, al partirse saldria repetido.
+        ya_tenia = all(d in refs for d in product["ids"])
         for d in product["ids"]:
             if d not in refs:
                 refs[d] = make_ref(product["cat"], refs, reservadas, counters)
                 nuevas += 1
+        conocidos += ya_tenia
         # El producto fusionado se muestra con la mas antigua del grupo, que es la que lleva
         # mas tiempo circulando entre los clientes.
         ref = min((refs[d] for d in product["ids"]), key=num_ref)
@@ -412,8 +416,8 @@ def main():
         })
         if i % 100 == 0:
             print("  %d/%d" % (i, len(unique)), flush=True)
-    print("  %d referencias nuevas, %d productos con referencia ya conocida"
-          % (nuevas, len(entries) - nuevas))
+    print("  %d referencias nuevas, %d productos que ya tenian referencia"
+          % (nuevas, conocidos))
 
     save_refs(refs, reservadas)
 

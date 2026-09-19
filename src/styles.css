@@ -941,7 +941,10 @@ body.panel-abierto .panel { transform: none; visibility: visible; }
   /* Aqui hay ancho de sobra: Catalogo y las redes vuelven a la misma fila y la cabecera
      recupera su alto de una linea. */
   .top-in { display: flex; justify-content: space-between; gap: 12px; }
-  .top-acciones { display: flex; align-items: center; gap: 16px; flex: none; }
+  /* flex-direction explicito: la regla base es column (en movil van apiladas) y sin esto la
+     columna seguia vertical aqui, mas alta que la cabecera: Catalogo salia cortado por arriba
+     y las redes por debajo, tapadas por la barra de filtros. */
+  .top-acciones { display: flex; flex-direction: row; align-items: center; gap: 16px; flex: none; }
   .redes { grid-column: auto; }
   .card-cat { font-size: 13px; }
 
