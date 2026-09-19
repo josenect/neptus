@@ -1,6 +1,10 @@
 /* NEPTUS STORE - catalogo. CSS puro, mobile-first, sin dependencias. */
 
 :root {
+  /* Solo modo claro, tambien para lo que pinta el propio navegador (el cuadro del buscador,
+     las barras de desplazamiento). Va ademas en el <meta> del HTML, que se lee antes de
+     pintar: asi el modo oscuro forzado del movil no invierte la pagina ni un instante. */
+  color-scheme: only light;
   --ink: #14161b;
   --ink-soft: #5b6270;
   --line: #e4e6ea;
