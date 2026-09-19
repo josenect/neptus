@@ -553,6 +553,9 @@ import "./styles.css";
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  /* Lo que se esta mirando, sin la pagina. Sirve para saber si un commit cambio de listado. */
+  var firmaVista = null;
+
   /* Recalcula y repinta todo, y refleja el estado en la URL. */
   function commit(replaceHistory) {
     applyFilters();
@@ -563,6 +566,16 @@ import "./styles.css";
       ? "1 producto"
       : VIEW.length.toLocaleString("es-CO") + " productos";
     writeURL(replaceHistory);
+    // Otro listado se empieza a mirar desde arriba. Antes, cambiando de categoria estando a
+    // media pagina, la nueva se abria a esa misma altura: el cliente veia productos sueltos
+    // del medio y tenia que subir a buscar el principio. Va aqui y no en cada boton porque
+    // por aqui pasan todos: chips, selector de Catalogo, pastillas, buscador y "limpiar".
+    // La primera vez no cuenta: al cargar la pagina no hay que mover nada.
+    var firma = [state.cat, state.brand, state.size, state.q].join("|");
+    if (firmaVista !== null && firma !== firmaVista) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+    firmaVista = firma;
   }
 
   // ------------------------------------------------------------------ panel de filtros
